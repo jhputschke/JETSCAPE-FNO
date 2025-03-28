@@ -18,3 +18,6 @@ examples/test_hydro_files/
 external_packages/freestream-milne/
 external_packages/smash/smash_code/
 external_packages/ipglasma
+fno_hydro/models
+fno_hydro/libtorch
+*__cmake*
