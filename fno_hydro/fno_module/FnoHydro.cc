@@ -26,10 +26,44 @@
 //#include "surfaceCell.h"
 #include "FnoHydro.h"
 
+#include <Riostream.h>
+#include "TRandom.h"
+#include "TCanvas.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TH3.h"
+#include "TF1.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TString.h"
+#include "TROOT.h"
+#include "TSystem.h"
+#include "TTree.h"
+
 using namespace Jetscape;
 
 // Register the module with the base class
 RegisterJetScapeModule<FnoHydro> FnoHydro::reg("FnoHydro");
+
+const double mNc = 3;
+const double mNf = 3;
+
+double get_temperature_ideal_EOS(double eps, double rhob = 0) {
+    return pow(
+        90.0 / M_PI / M_PI * (eps / 3.0)
+            / (2 * (mNc * mNc - 1) + 7. / 2 * mNc * mNf),
+        .25);
+}
+
+const int nx =150;
+const int ny =150;
+
+int GetPreqCellIndex(int id_x, int id_y)
+{
+    id_x = std::min(nx - 1, std::max(0, id_x));
+    id_y = std::min(ny - 1, std::max(0, id_y));
+    return (id_x * ny + id_y);
+}
 
 FnoHydro::FnoHydro() {
   hydro_status = NOT_START;
@@ -127,16 +161,27 @@ void FnoHydro::EvolveHydro() {
   //for(int i=0;i<10000;i++) cout<<pre_eq_ptr->e_[i]<<" "; // this is the energy density according to Chun ...
   //cout<<endl;
 
-  // Get Temperature for now via ideal gas EOS ... more sophistacted later use the EOS part Musics, or includie musics and some timesteps TBD !!!
-  // double EOS_idealgas::get_temperature(double eps, double rhob) const {
-  //     return pow(
-  //         90.0 / M_PI / M_PI * (eps / 3.0)
-  //             / (2 * (Nc * Nc - 1) + 7. / 2 * Nc * Nf),
-  //         .25);
-  // }
-  // Nc = 3
-  // Nf = 3
-  //
+  // *************************************************************************
+  // DEBUG QA ...
+
+  TH2D *h2dIS = new TH2D("h2dIS", "", 150, 0, 150, 150, 0, 150);
+  TH2D *h2dIS_T = new TH2D("h2dIS_T", "", 150, 0, 150, 150, 0, 150);
+  TH2D *h2dIS_2 = new TH2D("h2dIS_2", "", 150, -15, 15, 150, 15, 15);
+
+  //h2dIS->SetBinContent(75, 75, 12.);
+  for (int i=0;i<150;i++)
+    for (int j=0;j<150;j++) {
+      double ed = pre_eq_ptr->e_[GetPreqCellIndex(i,j)];
+      double T = get_temperature_ideal_EOS(ed);
+      h2dIS->SetBinContent(i,j,ed);
+      h2dIS_T->SetBinContent(i,j,T);
+    }
+
+  TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
+  //h2dIS_T->SetOptStat(0);
+  h2dIS_T->Draw("colz");
+  c1->SaveAs("h2dIS_T.gif");
+
   // *************************************************************************
 
   clear_up_evolution_data();
@@ -146,6 +191,8 @@ void FnoHydro::EvolveHydro() {
 
   if (hydro_status == INITIALIZED) {
     JSINFO << "running FnoHydro ...";
+
+    cout<<M_PI<<endl;
     //music_hydro_ptr->run_hydro();
 
     //********************************************
