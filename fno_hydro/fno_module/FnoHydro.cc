@@ -45,6 +45,32 @@ using namespace Jetscape;
 // Register the module with the base class
 RegisterJetScapeModule<FnoHydro> FnoHydro::reg("FnoHydro");
 
+//****************************************************************************************
+
+//REMARK: FOr now maybe not yet, just take the value from finer grid ... !!!!!
+//void GetPreqInterpolation(Jetscape::real x, Jetscape::real y) {
+  //int id_x = GetIdX(x);
+  //int id_y = GetIdY(y);
+
+  /*
+  auto c000 = GetFluidCell(id_tau, id_x, id_y, id_eta);
+  auto c001 = GetFluidCell(id_tau, id_x, id_y, id_eta + 1);
+  auto c010 = GetFluidCell(id_tau, id_x, id_y + 1, id_eta);
+  auto c011 = GetFluidCell(id_tau, id_x, id_y + 1, id_eta + 1);
+  auto c100 = GetFluidCell(id_tau, id_x + 1, id_y, id_eta);
+  auto c101 = GetFluidCell(id_tau, id_x + 1, id_y, id_eta + 1);
+  auto c110 = GetFluidCell(id_tau, id_x + 1, id_y + 1, id_eta);
+  auto c111 = GetFluidCell(id_tau, id_x + 1, id_y + 1, id_eta + 1);
+  real x0 = XCoord(id_x);
+  real x1 = XCoord(id_x + 1);
+  real y0 = YCoord(id_y);
+  real y1 = YCoord(id_y + 1);
+  */
+
+  //return TrilinearInt(x0, x1, y0, y1, eta0, eta1, c000, c001, c010, c011, c100,
+  //                    c101, c110, c111, x, y, eta);
+//}
+
 const double mNc = 3;
 const double mNf = 3;
 
@@ -55,9 +81,15 @@ double get_temperature_ideal_EOS(double eps, double rhob = 0) {
         .25);
 }
 
+// Get from actual grid ...
+// Think about resizing etc maybe use same interpoolation as for fluid cells !???
+// put in class and read in from preq module ...
 const int nx =150;
 const int ny =150;
 
+// https://github.com/JETSCAPE/JETSCAPE/pull/254/files
+// Rotation etc fix ... make sure not to repeat here !!!
+// x vs y axis ...
 int GetPreqCellIndex(int id_x, int id_y)
 {
     id_x = std::min(nx - 1, std::max(0, id_x));
@@ -65,10 +97,20 @@ int GetPreqCellIndex(int id_x, int id_y)
     return (id_x * ny + id_y);
 }
 
+void GetCellIndicesFromGlobalPreqIndex(int global_index, int& id_x, int& id_y)
+{
+    id_x = global_index / ny;
+    id_y = global_index % ny;
+}
+
+//****************************************************************************************
+
 FnoHydro::FnoHydro() {
   hydro_status = NOT_START;
   freezeout_temperature = 0.0;
   //doCooperFrye = 0;
+
+  x_min_preq = dx_preq = y_min_preq = dy_preq = 0.0;
 
   //has_source_terms = false;
   SetId("FnoHydro");
@@ -128,15 +170,21 @@ void FnoHydro::EvolveHydro() {
     exit(1);
   }
 
-  double dx = ini->GetXStep();
-  double dz = ini->GetZStep();
+  dx_preq = ini->GetXStep();
+  dy_preq = ini->GetZStep();
+  x_min_preq = - ini->GetXMax();
+  y_min_preq = - ini->GetYMax();
   double z_max = ini->GetZMax();
   int nz = ini->GetZSize();
   double tau0 = pre_eq_ptr->GetPreequilibriumEndTime();
+
   JSINFO << "hydro initial time set by PreEq module tau0 = " << tau0 << " fm/c";
-  JSINFO << "initial density profile dx = " << dx << " fm";
+  JSINFO << "initial density profile dx = " << dx_preq << " fm";
 
   //SetPreEqGridInfo();
+
+  cout<<dx_preq<<" "<<dy_preq<<" "<<z_max<<" "<<nz<<" "<<endl;
+  cout<<x_min_preq<<" "<<y_min_preq<<" "<<endl;
 
   /*
   has_source_terms = false;
@@ -165,22 +213,87 @@ void FnoHydro::EvolveHydro() {
   // DEBUG QA ...
 
   TH2D *h2dIS = new TH2D("h2dIS", "", 150, 0, 150, 150, 0, 150);
+  //TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, -15, 15, 60, -15, 15);
+  TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, 0, 60, 60, 0, 60);
+  TH2D *h2dIS_rebin_torch = new TH2D("h2dIS_rebin_torch", "", 60, 0, 60, 60, 0, 60);
+  TH2D *h2dIS_rebin_torch_pred = new TH2D("h2dIS_rebin_torch_pred", "", 60, 0, 60, 60, 0, 60);
+
   TH2D *h2dIS_T = new TH2D("h2dIS_T", "", 150, 0, 150, 150, 0, 150);
   TH2D *h2dIS_2 = new TH2D("h2dIS_2", "", 150, -15, 15, 150, 15, 15);
-
+  //cout<<h2dIS_T->GetBin(75,75)<<endl;
   //h2dIS->SetBinContent(75, 75, 12.);
+
+  // *********************************************************************************************
+  //REMARK: Issue with ideal EOS and temperature values > 2x higher then via bulk root writer !!!!
+  // *********************************************************************************************
+
   for (int i=0;i<150;i++)
     for (int j=0;j<150;j++) {
       double ed = pre_eq_ptr->e_[GetPreqCellIndex(i,j)];
       double T = get_temperature_ideal_EOS(ed);
+
       h2dIS->SetBinContent(i,j,ed);
       h2dIS_T->SetBinContent(i,j,T);
     }
 
+  // *******************************************************************
+  // Grid for FNO (explore superresolution at a later stage ...)
+  // Alternative, define Trento grid accordingingly!!!
+  // Certainly not ideal ...
+  // *******************************************************************
+
+  double m_dX = 0.5;
+  double m_xMin = -15;
+
+  //auto tensor fno_input_tensor = torch.zeros({1, 4, 60, 60, 50});
+  torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 50});
+
+  c10::IntArrayRef shape = fno_input_tensor.sizes();
+
+  cout<< "Tensor shape: ";
+    for (int i = 0; i < shape.size(); ++i) {
+      std::cout << shape[i] << " ";
+    }
+   std::cout << std::endl;
+
+  //REBIN attempt ...
+  //kinda takes time maybe some of the torch operations quicker ... think aboutit !!!
+  // OMP fore the loops ...
+
+  for (int i=0;i<60;i++)
+    for (int j=0;j<60;j++) {
+        double x_In = m_xMin + i*m_dX;
+        double y_In = m_xMin + j*m_dX;
+
+        int preq_glob_index = GetPreqCellIndex(GetPreqIdX(x_In),GetPreqIdY(y_In));
+        double ed = pre_eq_ptr->e_[preq_glob_index];
+        double T = get_temperature_ideal_EOS(ed);
+
+        h2dIS_rebin->Fill(i,j,ed);
+
+        for (int k=0;k<50;k++) {
+
+        fno_input_tensor[0][i][j][k] = ed;
+        fno_input_tensor[1][i][j][k] = T;
+        fno_input_tensor[2][i][j][k] = 0;
+        fno_input_tensor[3][i][j][k] = 0;
+
+        }
+    }
+
+  for (int i=0;i<60;i++)
+    for (int j=0;j<60;j++)
+    {
+        h2dIS_rebin_torch->Fill(i,j,fno_input_tensor[0][i][j][49].item<double>());
+    }
+
+
   TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
   //h2dIS_T->SetOptStat(0);
-  h2dIS_T->Draw("colz");
-  c1->SaveAs("h2dIS_T.gif");
+  //h2dIS_rebin->Draw("colz");
+  h2dIS_rebin_torch->Draw("colz");
+  c1->SaveAs("h2dIS_rebin_torch_id.gif");
+
 
   // *************************************************************************
 
@@ -192,8 +305,14 @@ void FnoHydro::EvolveHydro() {
   if (hydro_status == INITIALIZED) {
     JSINFO << "running FnoHydro ...";
 
-    cout<<M_PI<<endl;
-    //music_hydro_ptr->run_hydro();
+    // FIll bulk grid info from/defined by FNO (as said super resolution later)!!!
+    // TBD ...
+
+    //cout<<M_PI<<endl;
+    //Grifd info for bulk history ...
+    cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
+    cout<<bulk_info.XMin()<<" "<<bulk_info.XMax()<<" "<<bulk_info.nx<<" "<<bulk_info.dx<<endl;
+    cout<<bulk_info.YMin()<<" "<<bulk_info.YMax()<<" "<<bulk_info.ny<<" "<<bulk_info.dy<<endl;
 
     //********************************************
     //definitely a memeory leak here ... !!!!????
@@ -211,26 +330,42 @@ void FnoHydro::EvolveHydro() {
     // // Repeat the tensor twice along dimension 1 and once along dimension 0
     // auto repeated_tensor_2 = tensor.repeat({1, 2});
     // std::cout << "Repeated tensor (1x2):\n" << repeated_tensor_2 << std::endl;
+    // x_initial to a PyTorch tensor.
+    // x_initial.repeat(1, 1, 1, self.time_steps - 1): Repeats the tensor along the time dimension (axis 3 in NumPy corresponds to the last dimension in PyTorch).
 
+    torch::Tensor fno_input_tensor_unsqueeze = fno_input_tensor.unsqueeze(0);
+    //torch::Tensor fno_input_tensor_unsqueeze_duplicate = fno_input_tensor_unsqueeze.repeat({1, 49, 49, 49});
     std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(torch::ones({1,4, 60, 60, 50})); // .to(at::kMPS));
+    inputs.push_back(fno_input_tensor_unsqueeze); // .to(at::kMPS));
 
     // Execute the model and turn its output into a tensor.
     ///*
     torch::Tensor output = module.forward(inputs).toTensor();
 
-    c10::IntArrayRef shape = output.sizes();
+    shape = inputs[0].toTensor().sizes();
 
-     JSINFO << "Tensor shape: ";
+     cout<< "Tensor shape: ";
       for (int i = 0; i < shape.size(); ++i) {
         std::cout << shape[i] << " ";
       }
      std::cout << std::endl;
 
-    output.detach().resize_({0});
+    //output.detach().resize_({0});
     inputs.clear();
     //cout<<inputs.size()<<endl;
     /// ------------------------------------------------------------------
+
+    for (int i=0;i<60;i++)
+      for (int j=0;j<60;j++)
+      {
+          h2dIS_rebin_torch_pred->Fill(i,j,output[0][0][i][j][40].item<double>());
+      }
+
+    TCanvas *c2 = new TCanvas("c2", "Canvas", 800, 600);
+    //h2dIS_T->SetOptStat(0);
+    //h2dIS_rebin->Draw("colz");
+    h2dIS_rebin_torch_pred->Draw("colz");
+    c2->SaveAs("h2dIS_rebin_torch_id_pred.gif");
 
     hydro_status = FINISHED;
   }
@@ -301,6 +436,28 @@ void FnoHydro::PassPreEqEvolutionHistoryToFramework() {
 }
 
 /*
+void MpiMusic::SetHydroGridInfo() {
+  bulk_info.neta = music_hydro_ptr->get_neta();
+  bulk_info.nx = music_hydro_ptr->get_nx();
+  bulk_info.ny = music_hydro_ptr->get_nx();
+  bulk_info.x_min = -music_hydro_ptr->get_hydro_x_max();
+  bulk_info.dx = music_hydro_ptr->get_hydro_dx();
+  bulk_info.y_min = -music_hydro_ptr->get_hydro_x_max();
+  bulk_info.dy = music_hydro_ptr->get_hydro_dx();
+  bulk_info.eta_min = -music_hydro_ptr->get_hydro_eta_max();
+  bulk_info.deta = music_hydro_ptr->get_hydro_deta();
+
+  bulk_info.boost_invariant = music_hydro_ptr->is_boost_invariant();
+
+  if (flag_preEq_output_evo_to_memory == 0) {
+    bulk_info.tau_min = music_hydro_ptr->get_hydro_tau0();
+    bulk_info.dtau = music_hydro_ptr->get_hydro_dtau();
+    bulk_info.ntau = music_hydro_ptr->get_ntau();
+  } else {
+    bulk_info.ntau = music_hydro_ptr->get_ntau() + pre_eq_ptr->get_ntau();
+  }
+}
+
 void FnoHydro::PassHydroEvolutionHistoryToFramework() {
   JSINFO << "Passing hydro evolution information to JETSCAPE ... ";
   auto number_of_cells = music_hydro_ptr->get_number_of_fluid_cells();

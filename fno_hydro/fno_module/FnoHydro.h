@@ -38,11 +38,23 @@ private:
   //bool has_source_terms;
   //std::shared_ptr<HydroSourceJETSCAPE> hydro_source_terms_ptr;
 
+  Jetscape::real x_min_preq, dx_preq;
+  Jetscape::real y_min_preq, dy_preq;
+
   torch::jit::script::Module module;
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
   static RegisterJetScapeModule<FnoHydro> reg;
+
+  inline int GetPreqIdX(Jetscape::real x) const {
+    return (static_cast<int>((x - x_min_preq) / dx_preq));
+  }
+
+  inline int GetPreqIdY(Jetscape::real y) const {
+    return (static_cast<int>((y - y_min_preq) / dy_preq));
+  }
+
 
 public:
   FnoHydro();
