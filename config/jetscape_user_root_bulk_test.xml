@@ -13,7 +13,7 @@
   <vlevel> 0 </vlevel>
 
   <setReuseHydro> false </setReuseHydro>
-  <nReuseHydro> 1 </nReuseHydro>
+  <nReuseHydro> 0 </nReuseHydro>
 
   <JetScapeWriterAscii> on </JetScapeWriterAscii>
 
@@ -56,14 +56,23 @@
       </Trento>
   </IS>
 
-  <!-- Hard Process -->
-  <Hard>
-    <PythiaGun>
-      <pTHatMin>20</pTHatMin>
-      <pTHatMax>70</pTHatMax>
-      <eCM>200</eCM>
-    </PythiaGun>
-  </Hard>
+  <!-- Hard Process
+   <Hard>
+     <PythiaGun>
+       <pTHatMin>20</pTHatMin>
+       <pTHatMax>21</pTHatMax>
+       <eCM>200</eCM>
+     </PythiaGun>
+   </Hard> -->
+
+   <!-- Parton Gun test with fixed pT and fixed IS pos = 0  -->
+   <Hard>
+    <PGun>
+        <name>PGun</name>
+        <pT>20</pT>
+        <parID>21</parID>
+    </PGun>
+   </Hard>
 
   <!--Preequilibrium Dynamics Module -->
   <Preequilibrium>
@@ -98,19 +107,41 @@
   </Hydro>
 
   <!--Eloss Modules -->
-  <Eloss>
-    <Matter>
-      <in_vac> 1 </in_vac>
-    </Matter>
-  </Eloss>
+    <Eloss>
+        <maxT>10</maxT>
+      <Matter>
+          <!-- if not using lbt, use Q0=1; if using lbt use 2 -->
+        <Q0> 2.0 </Q0>
+        <in_vac> 0 </in_vac>
+        <vir_factor> 0.25 </vir_factor>
+        <recoil_on> 1 </recoil_on>
+        <broadening_on> 0 </broadening_on>
+        <!-- <brick_med> 1 </brick_med> -->
+        <!-- <!-1- maybe 4. is too long, but we can try 1 -> 2 -> 3 -> 5 etc... to see the change -->
+        <!-- based on the modification, using the same density--> -->
+        <!-- <brick_length> 14 </brick_length> -->
+        <hydro_Tc> 0.16 </hydro_Tc>
+      </Matter>
 
-  <!--PartonPrinter>
-      <FileName>./FinalPartonsInfo.dat</FileName>
-  </PartonPrinter-->
+      <!-- can run SMASH if I want, but not needed because we are using a separate backgound,
+      but when it's used, then it needs to run SMASH separately after JETSCAPE, can add later if wanted for correct background-->
 
-  <!-- Jet Hadronization Module -->
-  <JetHadronization>
-    <name>colorless</name>
-  </JetHadronization>
+      <!-- maybe used lbt later,
+      <Lbt>
+        <name> Lbt </name>
+        <Q0> 2.0 </Q0>
+        <in_vac> 0 </in_vac>
+        <only_leading> 0 </only_leading>
+        <hydro_Tc> 0.16 </hydro_Tc>
+        <alphas> 0.2 </alphas>
+        <run_alphas>1</run_alphas>
+      </Lbt>  -->
+
+    </Eloss>
+
+    <!-- Jet Hadronization Module -->
+    <JetHadronization>
+      <name>colorless</name>
+    </JetHadronization>
 
 </jetscape>

@@ -42,6 +42,7 @@ private:
   Jetscape::real y_min_preq, dy_preq;
 
   torch::jit::script::Module module;
+  torch::Tensor output;
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
@@ -64,13 +65,15 @@ public:
 
   void EvolveHydro();
   void GetHydroInfo(Jetscape::real t, Jetscape::real x, Jetscape::real y,
-                    Jetscape::real z,
-                    std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr);
+                    Jetscape::real z, std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr);
+
+  void GetHydroInfo_JETSCAPE(Jetscape::real t, Jetscape::real x, Jetscape::real y,
+                    Jetscape::real z, std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr);
 
   void SetPreEqGridInfo();
-  //void SetHydroGridInfo();
+  void SetHydroGridInfo();
   void PassPreEqEvolutionHistoryToFramework();
-  //void PassHydroEvolutionHistoryToFramework();
+  void PassHydroEvolutionHistoryToFramework();
   //void PassHydroSurfaceToFramework();
 
   //void add_a_liquefier(std::shared_ptr<LiquefierBase> new_liqueifier) {

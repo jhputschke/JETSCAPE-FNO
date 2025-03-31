@@ -165,6 +165,8 @@ void FnoHydro::EvolveHydro() {
   VERBOSE(8);
   JSINFO << "Initialize density profiles in FnoHydro ...";
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   if (pre_eq_ptr == nullptr) {
     JSWARN << "Missing the pre-equilibrium module ...";
     exit(1);
@@ -178,14 +180,16 @@ void FnoHydro::EvolveHydro() {
   int nz = ini->GetZSize();
   double tau0 = pre_eq_ptr->GetPreequilibriumEndTime();
 
-  JSINFO << "hydro initial time set by PreEq module tau0 = " << tau0 << " fm/c";
-  JSINFO << "initial density profile dx = " << dx_preq << " fm";
+  //JSINFO << "hydro initial time set by PreEq module tau0 = " << tau0 << " fm/c";
+  //JSINFO << "initial density profile dx = " << dx_preq << " fm";
 
-  //SetPreEqGridInfo();
+  SetPreEqGridInfo();
 
   cout<<dx_preq<<" "<<dy_preq<<" "<<z_max<<" "<<nz<<" "<<endl;
   cout<<x_min_preq<<" "<<y_min_preq<<" "<<endl;
 
+  JSINFO << "number of fluid cells received by the JETSCAPE: "
+             << bulk_info.data.size();
   /*
   has_source_terms = false;
   if (hydro_source_terms_ptr->get_number_of_sources() > 0) {
@@ -212,14 +216,16 @@ void FnoHydro::EvolveHydro() {
   // *************************************************************************
   // DEBUG QA ...
 
-  TH2D *h2dIS = new TH2D("h2dIS", "", 150, 0, 150, 150, 0, 150);
-  //TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, -15, 15, 60, -15, 15);
-  TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, 0, 60, 60, 0, 60);
-  TH2D *h2dIS_rebin_torch = new TH2D("h2dIS_rebin_torch", "", 60, 0, 60, 60, 0, 60);
-  TH2D *h2dIS_rebin_torch_pred = new TH2D("h2dIS_rebin_torch_pred", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS = new TH2D("h2dIS", "", 150, 0, 150, 150, 0, 150);
+  // //TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, -15, 15, 60, -15, 15);
+  // TH2D *h2dIS_rebin = new TH2D("h2dIS_rebin", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS_rebin_torch = new TH2D("h2dIS_rebin_torch", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS_rebin_torch_pred = new TH2D("h2dIS_rebin_torch_pred", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  TH2D *h2dIS_T = new TH2D("h2dIS_T", "", 150, 0, 150, 150, 0, 150);
-  TH2D *h2dIS_2 = new TH2D("h2dIS_2", "", 150, -15, 15, 150, 15, 15);
+  // TH2D *h2dIS_T = new TH2D("h2dIS_T", "", 150, 0, 150, 150, 0, 150);
+  // TH2D *h2dIS_2 = new TH2D("h2dIS_2", "", 150, -15, 15, 150, 15, 15);
+  //
   //cout<<h2dIS_T->GetBin(75,75)<<endl;
   //h2dIS->SetBinContent(75, 75, 12.);
 
@@ -227,14 +233,14 @@ void FnoHydro::EvolveHydro() {
   //REMARK: Issue with ideal EOS and temperature values > 2x higher then via bulk root writer !!!!
   // *********************************************************************************************
 
-  for (int i=0;i<150;i++)
-    for (int j=0;j<150;j++) {
-      double ed = pre_eq_ptr->e_[GetPreqCellIndex(i,j)];
-      double T = get_temperature_ideal_EOS(ed);
+  // for (int i=0;i<150;i++)
+  //   for (int j=0;j<150;j++) {
+  //     double ed = pre_eq_ptr->e_[GetPreqCellIndex(i,j)];
+  //     double T = get_temperature_ideal_EOS(ed);
 
-      h2dIS->SetBinContent(i,j,ed);
-      h2dIS_T->SetBinContent(i,j,T);
-    }
+  //     h2dIS->SetBinContent(i,j,ed);
+  //     h2dIS_T->SetBinContent(i,j,T);
+  //   }
 
   // *******************************************************************
   // Grid for FNO (explore superresolution at a later stage ...)
@@ -246,22 +252,27 @@ void FnoHydro::EvolveHydro() {
   double m_xMin = -15;
 
   //auto tensor fno_input_tensor = torch.zeros({1, 4, 60, 60, 50});
-  torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 50});
+  //torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 50});
+  torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 1});
 
+  string tensorShapeInput = "Input Tesnor shape from Preq : ";
   c10::IntArrayRef shape = fno_input_tensor.sizes();
-
-  cout<< "Tensor shape: ";
+  //cout<< "Tensor shape: ";
     for (int i = 0; i < shape.size(); ++i) {
-      std::cout << shape[i] << " ";
+      //std::cout << shape[i] << " ";
+      tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
     }
-   std::cout << std::endl;
+  //std::cout<< tensorShapeInput.c_str() << std::endl;
+  JSINFO << tensorShapeInput.c_str();
+
 
   //REBIN attempt ...
   //kinda takes time maybe some of the torch operations quicker ... think aboutit !!!
   // OMP fore the loops ...
-
+  // try with getting torch tensor and dimension from flat input vector ... !!!!
   for (int i=0;i<60;i++)
     for (int j=0;j<60;j++) {
+
         double x_In = m_xMin + i*m_dX;
         double y_In = m_xMin + j*m_dX;
 
@@ -269,31 +280,32 @@ void FnoHydro::EvolveHydro() {
         double ed = pre_eq_ptr->e_[preq_glob_index];
         double T = get_temperature_ideal_EOS(ed);
 
-        h2dIS_rebin->Fill(i,j,ed);
+        //h2dIS_rebin->Fill(i,j,ed);
 
-        for (int k=0;k<50;k++) {
-
+        //for (int k=0;k<50;k++) {
+        int k=0;
         fno_input_tensor[0][i][j][k] = ed;
         fno_input_tensor[1][i][j][k] = T;
         fno_input_tensor[2][i][j][k] = 0;
         fno_input_tensor[3][i][j][k] = 0;
 
-        }
+        //}
     }
 
-  for (int i=0;i<60;i++)
-    for (int j=0;j<60;j++)
-    {
-        h2dIS_rebin_torch->Fill(i,j,fno_input_tensor[0][i][j][49].item<double>());
-    }
+  fno_input_tensor = fno_input_tensor.repeat({1, 1, 1, 50});
 
+ //DEBUG ..
+  // for (int i=0;i<60;i++)
+  //   for (int j=0;j<60;j++)
+  //   {
+  //       h2dIS_rebin_torch->Fill(i,j,fno_input_tensor[0][i][j][49].item<double>());
+  //   }
 
-  TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
-  //h2dIS_T->SetOptStat(0);
-  //h2dIS_rebin->Draw("colz");
-  h2dIS_rebin_torch->Draw("colz");
-  c1->SaveAs("h2dIS_rebin_torch_id.gif");
-
+  // TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
+  // //h2dIS_T->SetOptStat(0);
+  // //h2dIS_rebin->Draw("colz");
+  // h2dIS_rebin_torch->Draw("colz");
+  // c1->SaveAs("h2dIS_rebin_torch_id.gif");
 
   // *************************************************************************
 
@@ -303,20 +315,17 @@ void FnoHydro::EvolveHydro() {
   hydro_status = INITIALIZED;
 
   if (hydro_status == INITIALIZED) {
-    JSINFO << "running FnoHydro ...";
+
+    JSINFO << "Running FNO model hydro time evolution prediction ...";
 
     // FIll bulk grid info from/defined by FNO (as said super resolution later)!!!
     // TBD ...
 
     //cout<<M_PI<<endl;
-    //Grifd info for bulk history ...
-    cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
-    cout<<bulk_info.XMin()<<" "<<bulk_info.XMax()<<" "<<bulk_info.nx<<" "<<bulk_info.dx<<endl;
-    cout<<bulk_info.YMin()<<" "<<bulk_info.YMax()<<" "<<bulk_info.ny<<" "<<bulk_info.dy<<endl;
 
-    //********************************************
-    //definitely a memeory leak here ... !!!!????
-    //********************************************
+    //********************************************************
+    //WARNING: definitely a memeory leak here ... !!!!????
+    //********************************************************
 
     /// ------------------------------------------------------------------
     // Dummy test here ...
@@ -333,46 +342,93 @@ void FnoHydro::EvolveHydro() {
     // x_initial to a PyTorch tensor.
     // x_initial.repeat(1, 1, 1, self.time_steps - 1): Repeats the tensor along the time dimension (axis 3 in NumPy corresponds to the last dimension in PyTorch).
 
-    torch::Tensor fno_input_tensor_unsqueeze = fno_input_tensor.unsqueeze(0);
+    //torch::Tensor fno_input_tensor_unsqueeze = fno_input_tensor.unsqueeze(0);
     //torch::Tensor fno_input_tensor_unsqueeze_duplicate = fno_input_tensor_unsqueeze.repeat({1, 49, 49, 49});
     std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(fno_input_tensor_unsqueeze); // .to(at::kMPS));
+    inputs.push_back(fno_input_tensor.unsqueeze(0)); //fno_input_tensor_unsqueeze); // .to(at::kMPS));
 
     // Execute the model and turn its output into a tensor.
-    ///*
-    torch::Tensor output = module.forward(inputs).toTensor();
+    output = module.forward(inputs).toTensor();
+    //***********************************************************************************
+    //REMARK: Check if ultimately the 0 time step is missing, if so attach from Preqq ...
+    //***********************************************************************************
 
-    shape = inputs[0].toTensor().sizes();
+    //torch::Tensor output = module.forward(fno_input_tensor_unsqueeze);
+    //torch::Tensor output = module.forward(fno_input_tensor.unsqueeze(0)).toTensor(); //Why not direclty a tensor!???
 
-     cout<< "Tensor shape: ";
-      for (int i = 0; i < shape.size(); ++i) {
-        std::cout << shape[i] << " ";
+    shape = output.sizes();
+    tensorShapeInput = "Output Tesnor shape from FNO : ";
+    //c10::IntArrayRef shape = fno_input_tensor.sizes();
+    //cout<< "Tensor shape: ";
+    for (int i = 0; i < shape.size(); ++i) {
+        //std::cout << shape[i] << " ";
+        tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
       }
-     std::cout << std::endl;
+    //std::cout<< tensorShapeInput.c_str() << std::endl;
+    JSINFO << tensorShapeInput.c_str();
 
-    //output.detach().resize_({0});
+    for(auto t : inputs)
+      t.toTensor().reset();
     inputs.clear();
     //cout<<inputs.size()<<endl;
+
     /// ------------------------------------------------------------------
 
-    for (int i=0;i<60;i++)
-      for (int j=0;j<60;j++)
-      {
-          h2dIS_rebin_torch_pred->Fill(i,j,output[0][0][i][j][40].item<double>());
-      }
+    // for (int i=0;i<60;i++)
+    //   for (int j=0;j<60;j++)
+    //   {
+    //       h2dIS_rebin_torch_pred->Fill(i,j,output[0][0][i][j][40].item<double>());
+    //   }
 
-    TCanvas *c2 = new TCanvas("c2", "Canvas", 800, 600);
-    //h2dIS_T->SetOptStat(0);
-    //h2dIS_rebin->Draw("colz");
-    h2dIS_rebin_torch_pred->Draw("colz");
-    c2->SaveAs("h2dIS_rebin_torch_id_pred.gif");
+    // TCanvas *c2 = new TCanvas("c2", "Canvas", 800, 600);
+    // //h2dIS_T->SetOptStat(0);
+    // //h2dIS_rebin->Draw("colz");
+    // h2dIS_rebin_torch_pred->Draw("colz");
+    // c2->SaveAs("h2dIS_rebin_torch_id_pred.gif");
 
     hydro_status = FINISHED;
   }
 
-  //PassHydroEvolutionHistoryToFramework();
+  auto end = std::chrono::high_resolution_clock::now();
+  // Calculate duration
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+
+  SetHydroGridInfo();
+
+  //Grifd info for bulk history ...
+  cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
+  cout<<bulk_info.XMin()<<" "<<bulk_info.XMax()<<" "<<bulk_info.nx<<" "<<bulk_info.dx<<endl;
+  cout<<bulk_info.YMin()<<" "<<bulk_info.YMax()<<" "<<bulk_info.ny<<" "<<bulk_info.dy<<endl;
+
+  PassHydroEvolutionHistoryToFramework();
+
   JSINFO << "number of fluid cells received by the JETSCAPE: "
              << bulk_info.data.size();
+
+  // DEBUG QA ...
+  // for (int i=0;i<60;i++)
+  //   for (int j=0;j<60;j++)
+  //   {
+  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
+  //   }
+
+  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  // c3->SaveAs("h2dIS_rebin_torch_pred_bulkhist_fromTensor.gif");
+
+  output.reset();
+
+  shape = output.sizes();
+  tensorShapeInput = "Output Tesnor shape from FNO : ";
+  //c10::IntArrayRef shape = fno_input_tensor.sizes();
+  //cout<< "Tensor shape: ";
+  for (int i = 0; i < shape.size(); ++i) {
+      //std::cout << shape[i] << " ";
+      tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
+    }
+  //std::cout<< tensorShapeInput.c_str() << std::endl;
+  JSINFO << tensorShapeInput.c_str();
 
   /*
   if (flag_surface_in_memory == 1) {
@@ -386,30 +442,46 @@ void FnoHydro::EvolveHydro() {
     music_hydro_ptr->run_Cooper_Frye();
   }
   */
+
 }
 
 void FnoHydro::SetPreEqGridInfo() {
+
   bulk_info.tau_min = pre_eq_ptr->GetPreequilibriumStartTime();
-  bulk_info.dtau = pre_eq_ptr->GetPreequilibriumEvodtau();
-  JSINFO << "preEq evo: tau_0 = " << bulk_info.tau_min
-         << " fm/c, dtau = " << bulk_info.dtau << " fm/c.";
+  //bulk_info.dtau = pre_eq_ptr->GetPreequilibriumEvodtau();
+  dx_preq = ini->GetXStep();
+  dy_preq = ini->GetZStep();
+  x_min_preq = - ini->GetXMax();
+  y_min_preq = - ini->GetYMax();
+
+  bulk_info.x_min = x_min_preq;
+  bulk_info.y_min = y_min_preq;
+
+  JSINFO << "Use preEq evo: tau_0 = " << bulk_info.tau_min
+         << " fm/c, and Xmin = Ymin = "<<bulk_info.x_min<< " fm, for FNO hydro (grid) time evolution prediction ...";
 }
 
 
-/*
-void MpiMusic::SetHydroGridInfo() {
-  bulk_info.neta = music_hydro_ptr->get_neta();
-  bulk_info.nx = music_hydro_ptr->get_nx();
-  bulk_info.ny = music_hydro_ptr->get_nx();
-  bulk_info.x_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dx = music_hydro_ptr->get_hydro_dx();
-  bulk_info.y_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dy = music_hydro_ptr->get_hydro_dx();
-  bulk_info.eta_min = -music_hydro_ptr->get_hydro_eta_max();
-  bulk_info.deta = music_hydro_ptr->get_hydro_deta();
+void FnoHydro::SetHydroGridInfo() {
 
-  bulk_info.boost_invariant = music_hydro_ptr->is_boost_invariant();
+  //REMARK: HArdcoded for new make read in from xml or some other info wrt FNO model (w/ and w/o super-resolution) !!!
+  //Or get from output tensor dimensions ... !!!!
 
+  bulk_info.neta = 1; //boost invvariant ...
+  bulk_info.nx = 60;
+  bulk_info.ny =60;
+  //bulk_info.x_min = -music_hydro_ptr->get_hydro_x_max();
+  bulk_info.dx = 0.5;
+  //bulk_info.y_min = -music_hydro_ptr->get_hydro_x_max();
+  bulk_info.dy = 0.5;
+  bulk_info.eta_min = 0;
+  bulk_info.deta = 0;
+
+  bulk_info.dtau=0.1;
+  bulk_info.ntau=50;
+
+  bulk_info.boost_invariant = true;
+  /*
   if (flag_preEq_output_evo_to_memory == 0) {
     bulk_info.tau_min = music_hydro_ptr->get_hydro_tau0();
     bulk_info.dtau = music_hydro_ptr->get_hydro_dtau();
@@ -417,15 +489,15 @@ void MpiMusic::SetHydroGridInfo() {
   } else {
     bulk_info.ntau = music_hydro_ptr->get_ntau() + pre_eq_ptr->get_ntau();
   }
+  */
 }
-*/
 
 void FnoHydro::PassPreEqEvolutionHistoryToFramework() {
   JSINFO << "Passing preEq evolution information to JETSCAPE ... ";
   auto number_of_cells = pre_eq_ptr->get_number_of_fluid_cells();
   JSINFO << "total number of preEq fluid cells: " << number_of_cells;
 
-  SetPreEqGridInfo();
+  //SetPreEqGridInfo();
 
   for (int i = 0; i < number_of_cells; i++) {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
@@ -435,66 +507,105 @@ void FnoHydro::PassPreEqEvolutionHistoryToFramework() {
   pre_eq_ptr->clear_evolution_data();
 }
 
-/*
-void MpiMusic::SetHydroGridInfo() {
-  bulk_info.neta = music_hydro_ptr->get_neta();
-  bulk_info.nx = music_hydro_ptr->get_nx();
-  bulk_info.ny = music_hydro_ptr->get_nx();
-  bulk_info.x_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dx = music_hydro_ptr->get_hydro_dx();
-  bulk_info.y_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dy = music_hydro_ptr->get_hydro_dx();
-  bulk_info.eta_min = -music_hydro_ptr->get_hydro_eta_max();
-  bulk_info.deta = music_hydro_ptr->get_hydro_deta();
-
-  bulk_info.boost_invariant = music_hydro_ptr->is_boost_invariant();
-
-  if (flag_preEq_output_evo_to_memory == 0) {
-    bulk_info.tau_min = music_hydro_ptr->get_hydro_tau0();
-    bulk_info.dtau = music_hydro_ptr->get_hydro_dtau();
-    bulk_info.ntau = music_hydro_ptr->get_ntau();
-  } else {
-    bulk_info.ntau = music_hydro_ptr->get_ntau() + pre_eq_ptr->get_ntau();
-  }
-}
+// *****************************************************************************************
+// Remark: Make sure that the tensor operation flatten is doing the same as the global index
+// of the bulk history --> check with filling via loops !!! and ouput histogram !!!
+// ==> looks like this falattening is not the same as the global index !!!
+// Check with moving time axis to front and then flatten !!!
+// *****************************************************************************************
 
 void FnoHydro::PassHydroEvolutionHistoryToFramework() {
   JSINFO << "Passing hydro evolution information to JETSCAPE ... ";
-  auto number_of_cells = music_hydro_ptr->get_number_of_fluid_cells();
-  JSINFO << "total number of MUSIC fluid cells: " << number_of_cells;
 
-  SetHydroGridInfo();
+  auto start = std::chrono::high_resolution_clock::now();
 
-  fluidCell *fluidCell_ptr = new fluidCell;
+  int number_of_cells = output.numel()/4.; //music_hydro_ptr->get_number_of_fluid_cells();
+  JSINFO << "total number of FNO prediction hydro fluid cells: " << number_of_cells;
+
+  //REMRAK: This works and results in correct bulk history filling ... !!!!
+  /*
+  output = torch::squeeze(output, 0);
+
+  for (int k=0;k<bulk_info.ntau;k++)
+    for (int i=0;i<bulk_info.nx;i++)
+        for (int j=0;j<bulk_info.ny;j++)
+        {
+            std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
+            //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
+
+            //cout<<i<<" "<<j<<" "<<k<<endl;
+            //cout<<output[0][i][j][k].item<double>()<<endl;
+
+            fluid_cell_info_ptr->energy_density = output[0][i][j][k].item<double>();
+            fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+            fluid_cell_info_ptr->temperature = output[1][i][j][k].item<double>();
+            fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
+            fluid_cell_info_ptr->vx = output[2][i][j][k].item<double>();
+            fluid_cell_info_ptr->vy = output[3][i][j][k].item<double>();
+            fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
+            fluid_cell_info_ptr->mu_B = 0.0;
+            fluid_cell_info_ptr->mu_C = 0.0;
+            fluid_cell_info_ptr->mu_S = 0.0;
+            fluid_cell_info_ptr->qgp_fraction = 0.0;
+            for (int i = 0; i < 4; i++) {
+              for (int j = 0; j < 4; j++) {
+                fluid_cell_info_ptr->pi[i][j] = 0.0;
+              }
+            }
+            fluid_cell_info_ptr->bulk_Pi = 0.0;
+            //StoreHydroEvolutionHistory(fluid_cell_info_ptr);
+            bulk_info.data.push_back(*fluid_cell_info_ptr);
+        }
+   */
+
+  //Works too after permute .. and quicker than loops ... !!!!
+  torch::Tensor flattened_tensor = torch::squeeze(output, 0);
+  flattened_tensor = flattened_tensor.permute({0, 3, 1, 2});
+  flattened_tensor = flattened_tensor.reshape({flattened_tensor.size(0), -1});
+
+  string tensorShapeInput = "Flattened Tesnor shape from FNO : ";
+  c10::IntArrayRef shape = flattened_tensor.sizes();
+  //cout<< "Tensor shape: ";
+  for (int i = 0; i < shape.size(); ++i) {
+      //std::cout << shape[i] << " ";
+      tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
+    }
+  //std::cout<< tensorShapeInput.c_str() << std::endl;
+  JSINFO << tensorShapeInput.c_str();
+
   for (int i = 0; i < number_of_cells; i++) {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
-    music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
+    //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
 
-    fluid_cell_info_ptr->energy_density = fluidCell_ptr->ed;
-    fluid_cell_info_ptr->entropy_density = fluidCell_ptr->sd;
-    fluid_cell_info_ptr->temperature = fluidCell_ptr->temperature;
-    fluid_cell_info_ptr->pressure = fluidCell_ptr->pressure;
-    fluid_cell_info_ptr->vx = fluidCell_ptr->vx;
-    fluid_cell_info_ptr->vy = fluidCell_ptr->vy;
-    fluid_cell_info_ptr->vz = fluidCell_ptr->vz;
+    fluid_cell_info_ptr->energy_density = flattened_tensor[0][i].item<double>();
+    fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+    fluid_cell_info_ptr->temperature = flattened_tensor[1][i].item<double>();
+    fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
+    fluid_cell_info_ptr->vx = flattened_tensor[2][i].item<double>();
+    fluid_cell_info_ptr->vy = flattened_tensor[3][i].item<double>();
+    fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
     fluid_cell_info_ptr->mu_B = 0.0;
     fluid_cell_info_ptr->mu_C = 0.0;
     fluid_cell_info_ptr->mu_S = 0.0;
     fluid_cell_info_ptr->qgp_fraction = 0.0;
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-        fluid_cell_info_ptr->pi[i][j] = fluidCell_ptr->pi[i][j];
+        fluid_cell_info_ptr->pi[i][j] = 0.0;
       }
     }
-    fluid_cell_info_ptr->bulk_Pi = fluidCell_ptr->bulkPi;
-    StoreHydroEvolutionHistory(fluid_cell_info_ptr);
+    fluid_cell_info_ptr->bulk_Pi = 0.0;
+    //StoreHydroEvolutionHistory(fluid_cell_info_ptr);
+    bulk_info.data.push_back(*fluid_cell_info_ptr);
   }
-  delete fluidCell_ptr;
 
-  music_hydro_ptr->clear_hydro_info_from_memory();
+  flattened_tensor.reset();
+  auto end = std::chrono::high_resolution_clock::now();
+  // Calculate duration
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 }
 
-
+/*
 void FnoHydro::PassHydroSurfaceToFramework() {
     JSINFO << "Passing hydro surface cells to JETSCAPE ... ";
     auto number_of_cells = music_hydro_ptr->get_number_of_surface_cells();
@@ -531,6 +642,13 @@ void FnoHydro::PassHydroSurfaceToFramework() {
 void FnoHydro::GetHydroInfo(
     Jetscape::real t, Jetscape::real x, Jetscape::real y, Jetscape::real z,
     std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr) {
-  //GetHydroInfo_JETSCAPE(t, x, y, z, fluid_cell_info_ptr);
+    GetHydroInfo_JETSCAPE(t, x, y, z, fluid_cell_info_ptr);
   //GetHydroInfo_MUSIC(t, x, y, z, fluid_cell_info_ptr);
+}
+
+void FnoHydro::GetHydroInfo_JETSCAPE(
+    Jetscape::real t, Jetscape::real x, Jetscape::real y, Jetscape::real z,
+    std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr) {
+  auto temp = bulk_info.get_tz(t, x, y, z);
+  fluid_cell_info_ptr = std::unique_ptr<FluidCellInfo>(new FluidCellInfo(temp));
 }

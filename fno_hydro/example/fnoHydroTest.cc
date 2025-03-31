@@ -92,12 +92,12 @@ int main(int argc, char** argv)
     // Initial conditions and hydro
     auto trento = make_shared<TrentoInitial>();
     auto null_predynamics = make_shared<NullPreDynamics> ();
-    //auto pGun= make_shared<PGun> ();
+    auto pGun= make_shared<PGun> ();
     auto hydro = make_shared<FnoHydro> ();
 
     jetscape->Add(trento);
     jetscape->Add(null_predynamics);
-    //jetscape->Add(pGun);
+    jetscape->Add(pGun);
     jetscape->Add(hydro);
 
     // surface sampler
@@ -110,10 +110,20 @@ int main(int argc, char** argv)
 
     jloss->Add(matter);
     jlossmanager->Add(jloss);
-    //jetscape->Add(jlossmanager);
+    jetscape->Add(jlossmanager);
 
-    //auto writer= make_shared<JetScapeWriterAscii> ("test_out.dat");
-    //jetscape->Add(writer);
+    // Hadronization
+    auto hadroMgr = make_shared<HadronizationManager> ();
+    auto hadro = make_shared<Hadronization> ();
+    //auto hadroModule = make_shared<ColoredHadronization> ();
+    //hadro->Add(hadroModule);
+    auto colorless = make_shared<ColorlessHadronization> ();
+    hadro->Add(colorless);
+    hadroMgr->Add(hadro);
+    jetscape->Add(hadroMgr);
+
+    auto writer= make_shared<JetScapeWriterAscii> ("test_out.dat");
+    jetscape->Add(writer);
 
 
     jetscape->Init();
