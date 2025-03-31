@@ -131,8 +131,6 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   // For testing now, overwrites the env settings ...
   torch::set_num_threads(1);
   JSINFO << "Number of threads (libtorch OMP): " << torch::get_num_threads();
-
-
   JSINFO << "Default device: " << device; // << std::endl;
 
   //REMARK: Same issue as with tracing, not everything in FNO model gets moved to the proper other device ...
@@ -159,15 +157,15 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
     //c10::Device device(c10::DeviceType::CPU);
     //REMARK: Libtorch has its on OMP library so currently we cannot use it with MUSCIC at the same time !!!
     //setenv OMP_NUM_THREADS 1 for testing, single core ...
-
-    JSINFO<<"Loading the traced Pytorch model ../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt";//<<endl;
-    module = torch::jit::load("../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt"); //, device);
+    string input_model_file = GetXMLElementText({"Hydro", "FNO", "model_file"});
+    JSINFO<<"Loading the traced Pytorch model : "<<input_model_file.c_str();//<<endl;
+    module = torch::jit::load(input_model_file.c_str()); //, device);
     //module.to(device);
 
     /// ------------------------------------------------------------------
   }
   catch (const c10::Error& e) {
-    JSWARN << "error loading the model\n";
+    JSWARN << "error loading the model :-( ...\n";
     exit(-1);
   }
 
@@ -216,8 +214,8 @@ void FnoHydro::EvolveHydro() {
   cout<<dx_preq<<" "<<dy_preq<<" "<<z_max<<" "<<nz<<" "<<endl;
   cout<<x_min_preq<<" "<<y_min_preq<<" "<<endl;
 
-  JSINFO << "number of fluid cells received by the JETSCAPE: "
-             << bulk_info.data.size();
+  //JSINFO << "number of fluid cells received by the JETSCAPE: "
+  //          << bulk_info.data.size();
   /*
   has_source_terms = false;
   if (hydro_source_terms_ptr->get_number_of_sources() > 0) {

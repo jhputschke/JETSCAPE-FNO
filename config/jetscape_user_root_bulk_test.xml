@@ -1,7 +1,8 @@
 <?xml version="1.0" ?>
 <jetscape>
 
-  <enableAutomaticTaskListDetermination> false </enableAutomaticTaskListDetermination>
+  <enableAutomaticTaskListDetermination
+    > false </enableAutomaticTaskListDetermination>
 
   <nEvents> 1 </nEvents>
 
@@ -103,6 +104,17 @@
           -->
           <freezeout_temperature>0.136</freezeout_temperature>
       </MUSIC>
+
+      <FNO>
+        <model_file
+            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+
+        <centrality-low>0</centrality-low>
+        <centrality-high>10</centrality-high>
+         <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
+
+      </FNO>
+
   </Hydro>
 
   <!--Eloss Modules -->
