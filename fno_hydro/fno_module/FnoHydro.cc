@@ -26,8 +26,6 @@
 //#include "surfaceCell.h"
 #include "FnoHydro.h"
 
-#include <torch/torch.h>
-
 #include <Riostream.h>
 #include "TRandom.h"
 #include "TCanvas.h"
@@ -107,13 +105,13 @@ void GetCellIndicesFromGlobalPreqIndex(int global_index, int& id_x, int& id_y)
 
 //****************************************************************************************
 
-FnoHydro::FnoHydro() {
+FnoHydro::FnoHydro() : device({}) {
   hydro_status = NOT_START;
   freezeout_temperature = 0.0;
   //doCooperFrye = 0;
 
   x_min_preq = dx_preq = y_min_preq = dy_preq = 0.0;
-
+  //device = torch::Device({});
   //has_source_terms = false;
   SetId("FnoHydro");
   //hydro_source_terms_ptr =
@@ -133,6 +131,26 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   // For testing now, overwrites the env settings ...
   torch::set_num_threads(1);
   JSINFO << "Number of threads (libtorch OMP): " << torch::get_num_threads();
+
+
+  JSINFO << "Default device: " << device; // << std::endl;
+
+  //REMARK: Same issue as with tracing, not everything in FNO model gets moved to the proper other device ...
+  /*
+    if (torch::mps::is_available()) {
+        JSINFO<< "MPS device available :-). Use it ...";// << std::endl;
+        device=torch::Device(torch::kMPS);
+    }
+    else if (torch::cuda::is_available()) {
+        device = torch::Device(torch::kCUDA);
+        JSINFO << "CUDA device available :-). Use it ...";// << std::endl;
+    }
+    else {
+        JSINFO << "MPS or CUDA device(s) not available. Use CPU ..."; // << std::endl;
+        device = torch::Device(torch::kCPU);
+    }
+  */
+
   /// ------------------------------------------------------------------
   // Dummy test here ...
   //
@@ -144,6 +162,7 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
 
     JSINFO<<"Loading the traced Pytorch model ../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt";//<<endl;
     module = torch::jit::load("../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt"); //, device);
+    //module.to(device);
 
     /// ------------------------------------------------------------------
   }
@@ -353,8 +372,8 @@ void FnoHydro::EvolveHydro() {
     //torch::Tensor fno_input_tensor_unsqueeze = fno_input_tensor.unsqueeze(0);
     //torch::Tensor fno_input_tensor_unsqueeze_duplicate = fno_input_tensor_unsqueeze.repeat({1, 49, 49, 49});
     std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(fno_input_tensor.unsqueeze(0)); //fno_input_tensor_unsqueeze); // .to(at::kMPS));
-
+    //inputs.push_back(fno_input_tensor.unsqueeze(0).to(device)); //fno_input_tensor_unsqueeze); // .to(at::kMPS));
+    inputs.push_back(fno_input_tensor.unsqueeze(0));
     // Execute the model and turn its output into a tensor.
     output = module.forward(inputs).toTensor();
     //***********************************************************************************

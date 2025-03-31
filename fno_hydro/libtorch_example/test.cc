@@ -22,5 +22,20 @@ std::cout << "Repeated tensor (1x2):\n" << repeated_tensor_2 << std::endl;
 auto repeated_tensor_3 = tensor.repeat({2, 3});
     std::cout << "Repeated tensor (2x3):\n" << repeated_tensor_3 << std::endl;
 
+
+torch::Device device({});
+    if (torch::cuda::is_available()) {
+        device = torch::Device(torch::kCUDA);
+        std::cout << "CUDA device selected." << std::endl;
+    } else if (torch::mps::is_available()) {
+        device = torch::Device(torch::kMPS);
+        std::cout << "MPS device selected." << std::endl;
+    } else {
+        device = torch::Device(torch::kCPU);
+        std::cout << "CPU device selected." << std::endl;
+    }
+    torch::Tensor tensor2 = torch::ones({2, 2}, device);
+    std::cout << "Tensor:\n" << tensor2 << std::endl;
+
 return 0;
 }

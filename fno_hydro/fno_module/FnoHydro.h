@@ -26,6 +26,7 @@
 #include "MakeUniqueHelper.h"
 
 #include <torch/script.h>
+#include <torch/torch.h>
 
 using namespace Jetscape;
 
@@ -43,6 +44,7 @@ private:
 
   torch::jit::script::Module module;
   torch::Tensor output;
+  torch::Device device;
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
