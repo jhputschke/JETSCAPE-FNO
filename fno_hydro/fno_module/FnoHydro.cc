@@ -26,6 +26,8 @@
 //#include "surfaceCell.h"
 #include "FnoHydro.h"
 
+#include <torch/torch.h>
+
 #include <Riostream.h>
 #include "TRandom.h"
 #include "TCanvas.h"
@@ -124,6 +126,13 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   JSINFO << "Initialize FnoHydro ...";
   VERBOSE(8);
 
+  //*************************************************************************************************
+  //REMARK: Somehow no real improvment when using more threads for tensor and model operations !????
+  //*************************************************************************************************
+
+  // For testing now, overwrites the env settings ...
+  torch::set_num_threads(1);
+  JSINFO << "Number of threads (libtorch OMP): " << torch::get_num_threads();
   /// ------------------------------------------------------------------
   // Dummy test here ...
   //
@@ -264,7 +273,6 @@ void FnoHydro::EvolveHydro() {
     }
   //std::cout<< tensorShapeInput.c_str() << std::endl;
   JSINFO << tensorShapeInput.c_str();
-
 
   //REBIN attempt ...
   //kinda takes time maybe some of the torch operations quicker ... think aboutit !!!
@@ -573,6 +581,13 @@ void FnoHydro::PassHydroEvolutionHistoryToFramework() {
   //std::cout<< tensorShapeInput.c_str() << std::endl;
   JSINFO << tensorShapeInput.c_str();
 
+  auto end = std::chrono::high_resolution_clock::now();
+  // Calculate duration
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+
+  start = std::chrono::high_resolution_clock::now();
+
   for (int i = 0; i < number_of_cells; i++) {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
     //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
@@ -599,10 +614,11 @@ void FnoHydro::PassHydroEvolutionHistoryToFramework() {
   }
 
   flattened_tensor.reset();
-  auto end = std::chrono::high_resolution_clock::now();
+
+  end = std::chrono::high_resolution_clock::now();
   // Calculate duration
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time taken loop to copy to framework: " << duration.count() << " milliseconds" << std::endl;
 }
 
 /*
