@@ -84,6 +84,7 @@ double get_temperature_ideal_EOS(double eps, double rhob = 0) {
 // Get from actual grid ...
 // Think about resizing etc maybe use same interpoolation as for fluid cells !???
 // put in class and read in from preq module ...
+/* *
 const int nx =150;
 const int ny =150;
 
@@ -102,6 +103,7 @@ void GetCellIndicesFromGlobalPreqIndex(int global_index, int& id_x, int& id_y)
     id_x = global_index / ny;
     id_y = global_index % ny;
 }
+*/
 
 //****************************************************************************************
 
@@ -111,6 +113,16 @@ FnoHydro::FnoHydro() : device({}) {
   //doCooperFrye = 0;
 
   x_min_preq = dx_preq = y_min_preq = dy_preq = 0.0;
+  nx_preq = ny_preq = 0;
+
+  x_min_fno = dx_fno = y_min_fno = dy_fno = 0.0;
+  nx_fno = ny_fno = 60;
+  ntau_fno = 50;
+  n_features = 4;
+
+  neta_fno = 1;
+  deta_fno = 0.0;
+
   //device = torch::Device({});
   //has_source_terms = false;
   SetId("FnoHydro");
@@ -172,6 +184,33 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   JSINFO << "--> traced Pytorch model loaded";
   /// ------------------------------------------------------------------
 
+  // ******************************************************************************************************************************************
+  //REMARK: Super-resolution does not seem to work, related to similar error in the embedding layer, might be hardcoded when serialzed !!!????
+  // ---> try to follow up !!!! Check if it works in Python ....
+  // ******************************************************************************************************************************************
+
+  x_min_fno = GetXMLElementDouble({"Hydro", "FNO", "x_min"});
+  y_min_fno = GetXMLElementDouble({"Hydro", "FNO", "y_min"});
+  //z_min_fno = GetBinMin({"Hydro", "FNO", "z_min"});
+
+  nx_fno = GetXMLElementInt({"Hydro", "FNO", "nx"});
+  ny_fno = GetXMLElementInt({"Hydro", "FNO", "ny"});
+  //nz_fno = GetXMLElementInt({"Hydro", "FNO", "nz"});
+
+  dx_fno = -2*x_min_fno/(double) nx_fno;
+  dy_fno = -2*y_min_fno/(double) ny_fno;
+  //dz_fno = -2*z_min_fno/(double) nz_fno;
+
+  ntau_fno = GetXMLElementInt({"Hydro", "FNO", "ntau"});
+  neta_fno = GetXMLElementInt({"Hydro", "FNO", "neta"});
+
+  deta_fno = GetXMLElementDouble({"Hydro", "FNO", "deta"});
+  dtau_fno = GetXMLElementDouble({"Hydro", "FNO", "dtau"});
+
+  cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
+  cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
+  cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
+
   /*
   freezeout_temperature =
       GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
@@ -213,6 +252,7 @@ void FnoHydro::EvolveHydro() {
 
   cout<<dx_preq<<" "<<dy_preq<<" "<<z_max<<" "<<nz<<" "<<endl;
   cout<<x_min_preq<<" "<<y_min_preq<<" "<<endl;
+  cout<<nx_preq<<" "<<ny_preq<<" "<<endl; //nz_preq<<" "<<endl;
 
   //JSINFO << "number of fluid cells received by the JETSCAPE: "
   //          << bulk_info.data.size();
@@ -274,12 +314,15 @@ void FnoHydro::EvolveHydro() {
   // Certainly not ideal ...
   // *******************************************************************
 
-  double m_dX = 0.5;
-  double m_xMin = -15;
+  //double m_dX = dx_fno;
+  //double m_xMin = x_min_fno;
 
   //auto tensor fno_input_tensor = torch.zeros({1, 4, 60, 60, 50});
   //torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 50});
-  torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 1});
+  //torch::Tensor fno_input_tensor = torch::zeros({4, 60, 60, 1});
+
+  // last dimension, number of timesteps for predictions fix to only 1 for now !!!!
+  torch::Tensor fno_input_tensor = torch::zeros({n_features, nx_fno, ny_fno, 1});
 
   string tensorShapeInput = "Input Tesnor shape from Preq : ";
   c10::IntArrayRef shape = fno_input_tensor.sizes();
@@ -295,11 +338,11 @@ void FnoHydro::EvolveHydro() {
   //kinda takes time maybe some of the torch operations quicker ... think aboutit !!!
   // OMP fore the loops ...
   // try with getting torch tensor and dimension from flat input vector ... !!!!
-  for (int i=0;i<60;i++)
-    for (int j=0;j<60;j++) {
+  for (int i=0;i<nx_fno;i++)
+    for (int j=0;j<ny_fno;j++) {
 
-        double x_In = m_xMin + i*m_dX;
-        double y_In = m_xMin + j*m_dX;
+        double x_In = x_min_fno + i*dx_fno;
+        double y_In = y_min_fno + j*dy_fno;
 
         int preq_glob_index = GetPreqCellIndex(GetPreqIdX(x_In),GetPreqIdY(y_In));
         double ed = pre_eq_ptr->e_[preq_glob_index];
@@ -311,13 +354,14 @@ void FnoHydro::EvolveHydro() {
         int k=0;
         fno_input_tensor[0][i][j][k] = ed;
         fno_input_tensor[1][i][j][k] = T;
+        // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
         fno_input_tensor[2][i][j][k] = 0;
         fno_input_tensor[3][i][j][k] = 0;
 
         //}
     }
 
-  fno_input_tensor = fno_input_tensor.repeat({1, 1, 1, 50});
+  fno_input_tensor = fno_input_tensor.repeat({1, 1, 1, ntau_fno});
 
  //DEBUG ..
   // for (int i=0;i<60;i++)
@@ -419,6 +463,7 @@ void FnoHydro::EvolveHydro() {
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 
+  // Maybe move to Init ... !??? Think about ...
   SetHydroGridInfo();
 
   //Grifd info for bulk history ...
@@ -432,28 +477,30 @@ void FnoHydro::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
-  // for (int i=0;i<60;i++)
-  //   for (int j=0;j<60;j++)
-  //   {
-  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
-  //   }
+  TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
-  // c3->SaveAs("h2dIS_rebin_torch_pred_bulkhist_fromTensor.gif");
+  for (int i=0;i<nx_fno;i++)
+    for (int j=0;j<ny_fno;j++)
+    {
+        h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
+    }
+
+  TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  c3->SaveAs("h2dIS_rebin_torch_pred_bulkhist_fromTensor.gif");
 
   output.reset();
 
-  shape = output.sizes();
-  tensorShapeInput = "Output Tesnor shape from FNO : ";
-  //c10::IntArrayRef shape = fno_input_tensor.sizes();
-  //cout<< "Tensor shape: ";
-  for (int i = 0; i < shape.size(); ++i) {
-      //std::cout << shape[i] << " ";
-      tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
-    }
-  //std::cout<< tensorShapeInput.c_str() << std::endl;
-  JSINFO << tensorShapeInput.c_str();
+  // shape = output.sizes();
+  // tensorShapeInput = "Output Tesnor shape from FNO : ";
+  // //c10::IntArrayRef shape = fno_input_tensor.sizes();
+  // //cout<< "Tensor shape: ";
+  // for (int i = 0; i < shape.size(); ++i) {
+  //     //std::cout << shape[i] << " ";
+  //     tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
+  //   }
+  // //std::cout<< tensorShapeInput.c_str() << std::endl;
+  // JSINFO << tensorShapeInput.c_str();
 
   /*
   if (flag_surface_in_memory == 1) {
@@ -475,9 +522,16 @@ void FnoHydro::SetPreEqGridInfo() {
   bulk_info.tau_min = pre_eq_ptr->GetPreequilibriumStartTime();
   //bulk_info.dtau = pre_eq_ptr->GetPreequilibriumEvodtau();
   dx_preq = ini->GetXStep();
-  dy_preq = ini->GetZStep();
+  dy_preq = ini->GetYStep();
+  //dz_preq = ini->GetZStep();
+
   x_min_preq = - ini->GetXMax();
   y_min_preq = - ini->GetYMax();
+  //z_max_preq = ini->GetZMax();
+
+  nx_preq = ini->GetXSize();
+  ny_preq = ini->GetYSize();
+  //nz_preq = ini->GetZSize();
 
   bulk_info.x_min = x_min_preq;
   bulk_info.y_min = y_min_preq;
@@ -492,18 +546,18 @@ void FnoHydro::SetHydroGridInfo() {
   //REMARK: HArdcoded for new make read in from xml or some other info wrt FNO model (w/ and w/o super-resolution) !!!
   //Or get from output tensor dimensions ... !!!!
 
-  bulk_info.neta = 1; //boost invvariant ...
-  bulk_info.nx = 60;
-  bulk_info.ny =60;
+  bulk_info.neta = neta_fno; //boost invvariant ...
+  bulk_info.nx = nx_fno;
+  bulk_info.ny =ny_fno;
   //bulk_info.x_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dx = 0.5;
+  bulk_info.dx =dx_fno;
   //bulk_info.y_min = -music_hydro_ptr->get_hydro_x_max();
-  bulk_info.dy = 0.5;
+  bulk_info.dy = dy_fno;
   bulk_info.eta_min = 0;
-  bulk_info.deta = 0;
+  bulk_info.deta = deta_fno;
 
-  bulk_info.dtau=0.1;
-  bulk_info.ntau=50;
+  bulk_info.dtau=dtau_fno;
+  bulk_info.ntau=ntau_fno;
 
   bulk_info.boost_invariant = true;
   /*
@@ -684,4 +738,17 @@ void FnoHydro::GetHydroInfo_JETSCAPE(
     std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr) {
   auto temp = bulk_info.get_tz(t, x, y, z);
   fluid_cell_info_ptr = std::unique_ptr<FluidCellInfo>(new FluidCellInfo(temp));
+}
+
+int FnoHydro::GetPreqCellIndex(int id_x, int id_y) const
+{
+    id_x = std::min(nx_preq - 1, std::max(0, id_x));
+    id_y = std::min(ny_preq - 1, std::max(0, id_y));
+    return (id_x * ny_preq + id_y);
+}
+
+void FnoHydro::GetCellIndicesFromGlobalPreqIndex(int global_index, int& id_x, int& id_y) const
+{
+    id_x = global_index / ny_preq; //check, not important since mostly symmetric ... !
+    id_y = global_index % ny_preq;
 }

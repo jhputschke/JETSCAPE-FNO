@@ -41,6 +41,19 @@ private:
 
   Jetscape::real x_min_preq, dx_preq;
   Jetscape::real y_min_preq, dy_preq;
+  //Jetscape::real z_min_preq, dz_preq;
+  int nx_preq, ny_preq; // nz_preq;
+
+  Jetscape::real x_min_fno, dx_fno;
+  Jetscape::real y_min_fno, dy_fno;
+  Jetscape::real deta_fno;
+  Jetscape::real dtau_fno;
+  //Jetscape::real z_min_fno, dz_fno;
+  int nx_fno, ny_fno; // nz_fno
+  int ntau_fno;
+  int neta_fno;
+
+  int n_features;
 
   torch::jit::script::Module module;
   torch::Tensor output;
@@ -58,6 +71,8 @@ private:
     return (static_cast<int>((y - y_min_preq) / dy_preq));
   }
 
+  int GetPreqCellIndex(int id_x, int id_y) const;
+  void GetCellIndicesFromGlobalPreqIndex(int global_index, int& id_x, int& id_y) const;
 
 public:
 
