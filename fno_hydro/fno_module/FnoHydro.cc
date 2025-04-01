@@ -274,6 +274,8 @@ void FnoHydro::EvolveHydro() {
    //
    // https://github.com/JETSCAPE/JETSCAPE/pull/254/files
    // Rotation etc fix ... make sure not to repeat here !!!
+   // See also Dave email: wrt to training data:  [E, T, vy, vx] as opposed to [E, T, vx, vy] try to confirn ASAP!!!!
+   // *************************************************************************
 
   //DEBUG
   //for(int i=0;i<10000;i++) cout<<pre_eq_ptr->e_[i]<<" "; // this is the energy density according to Chun ...
