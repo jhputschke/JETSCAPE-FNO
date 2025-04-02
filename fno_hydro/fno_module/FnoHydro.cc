@@ -207,6 +207,8 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   deta_fno = GetXMLElementDouble({"Hydro", "FNO", "deta"});
   dtau_fno = GetXMLElementDouble({"Hydro", "FNO", "dtau"});
 
+  n_features = GetXMLElementInt({"Hydro", "FNO", "n_features"});
+
   cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
   cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
   cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
@@ -479,17 +481,17 @@ void FnoHydro::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
-  TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  for (int i=0;i<nx_fno;i++)
-    for (int j=0;j<ny_fno;j++)
-    {
-        h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
-    }
+  // for (int i=0;i<nx_fno;i++)
+  //   for (int j=0;j<ny_fno;j++)
+  //   {
+  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
+  //   }
 
-  TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
-  c3->SaveAs("h2dIS_rebin_torch_pred_bulkhist_fromTensor.gif");
+  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  // c3->SaveAs("h2dIS_rebin_torch_pred_bulkhist_fromTensor.gif");
 
   output.reset();
 

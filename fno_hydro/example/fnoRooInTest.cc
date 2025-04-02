@@ -53,7 +53,7 @@
 #include "ColoredHadronization.h"
 #include "ColorlessHadronization.h"
 //#include "HydroFromFile.h"
-#include "FnoHydro.h"
+#include "FnoRooIn.h"
 
 #include <chrono>
 #include <thread>
@@ -93,10 +93,10 @@ int main(int argc, char** argv)
     auto trento = make_shared<TrentoInitial>();
     auto null_predynamics = make_shared<NullPreDynamics> ();
     auto pGun= make_shared<PGun> ();
-    auto hydro = make_shared<FnoHydro> ();
+    auto hydro = make_shared<FnoRooIn> ();
 
-    jetscape->Add(trento);
-    jetscape->Add(null_predynamics);
+    //jetscape->Add(trento);
+    //jetscape->Add(null_predynamics);
     jetscape->Add(pGun);
     jetscape->Add(hydro);
 

@@ -127,6 +127,30 @@
 
       </FNO>
 
+      <FNOROOIN>
+        <model_file
+          >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+        <root_file>/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
+
+        <fullHydroIn> 1 </fullHydroIn>
+        <centrality-low>0</centrality-low>
+        <centrality-high>10</centrality-high>
+         <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
+        <n_features>4</n_features>
+        <nx>60</nx>
+        <ny>60</ny>
+        <neta>1</neta>
+        <ntau>50</ntau>
+        <x_min>-15.0</x_min>
+        <y_min>-15.0</y_min>
+         <!-- <dx>0.5</dx>
+        <dy>0.5</dy> -->
+        <dtau>0.1</dtau>
+        <deta>0</deta>
+        <neta>1</neta>
+
+      </FNOROOIN>
+
   </Hydro>
 
   <!--Eloss Modules -->
