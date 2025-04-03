@@ -37,3 +37,6 @@ target_link_libraries(fnoHydroTest FnoModule ${ROOT_LIBRARIES})
 
 add_executable(fnoRooInTest ./fnoRooInTest.cc)
 target_link_libraries(fnoRooInTest FnoModule ${ROOT_LIBRARIES})
+
+add_executable(simpleReaderAna ./simpleReaderAna.cc)
+target_link_libraries(simpleReaderAna JetScape ${ROOT_LIBRARIES})

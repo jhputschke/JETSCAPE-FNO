@@ -254,18 +254,18 @@ void FnoRooIn::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
-  TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
+  // TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  for (int i=0;i<nx_fno;i++)
-    for (int j=0;j<ny_fno;j++)
-    {
-        h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
-    }
+  // for (int i=0;i<nx_fno;i++)
+  //   for (int j=0;j<ny_fno;j++)
+  //   {
+  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
+  //   }
 
-  TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
-  //h2dIS_root->Draw("colz");
-  c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
+  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  // //h2dIS_root->Draw("colz");
+  // c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
 
   output.reset();
   m_xyt->clear();

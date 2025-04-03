@@ -124,7 +124,11 @@ int main(int argc, char** argv)
     hadroMgr->Add(hadro);
     jetscape->Add(hadroMgr);
 
-    auto writer= make_shared<JetScapeWriterAscii> ("test_out.dat");
+    string fName="test_out.dat";
+    if (argc > 1)
+      fName = argv[1];
+
+    auto writer= make_shared<JetScapeWriterAscii> (fName);
     jetscape->Add(writer);
 
 
