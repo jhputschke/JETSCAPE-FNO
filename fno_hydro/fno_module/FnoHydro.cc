@@ -169,6 +169,13 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
     //c10::Device device(c10::DeviceType::CPU);
     //REMARK: Libtorch has its on OMP library so currently we cannot use it with MUSCIC at the same time !!!
     //setenv OMP_NUM_THREADS 1 for testing, single core ...
+
+    // ************************************************************************************
+    // Try improve speed : https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
+    // Use oneDNN Graph with TorchScript for inference ...
+    // --> No real improvement ==> Follow up on this !???
+    // ************************************************************************************
+    //
     string input_model_file = GetXMLElementText({"Hydro", "FNO", "model_file"});
     JSINFO<<"Loading the traced Pytorch model : "<<input_model_file.c_str();//<<endl;
     module = torch::jit::load(input_model_file.c_str()); //, device);
@@ -663,16 +670,19 @@ void FnoHydro::PassHydroEvolutionHistoryToFramework() {
 
   start = std::chrono::high_resolution_clock::now();
 
+  //Tremendous speed up !!!
+  auto accessor = flattened_tensor.accessor<float, 2>();
+
   for (int i = 0; i < number_of_cells; i++) {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
     //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
 
-    fluid_cell_info_ptr->energy_density = flattened_tensor[0][i].item<double>();
+    fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
     fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
-    fluid_cell_info_ptr->temperature = flattened_tensor[1][i].item<double>();
+    fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
     fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
-    fluid_cell_info_ptr->vx = flattened_tensor[2][i].item<double>();
-    fluid_cell_info_ptr->vy = flattened_tensor[3][i].item<double>();
+    fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
+    fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
     fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
     fluid_cell_info_ptr->mu_B = 0.0;
     fluid_cell_info_ptr->mu_C = 0.0;

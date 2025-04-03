@@ -96,10 +96,16 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
     JSINFO << "Default device: " << device; // << std::endl;
 
     try {
+    // ************************************************************************************
+    // Try improve speed : https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
+    // Use oneDNN Graph with TorchScript for inference ...
+    // --> No real improvement ==> Follow up on this !???
+    // ************************************************************************************
+    //
     string input_model_file = GetXMLElementText({"Hydro", "FNOROOIN", "model_file"});
     JSINFO<<"Loading the traced Pytorch model : "<<input_model_file.c_str();//<<endl;
     module = torch::jit::load(input_model_file.c_str()); //, device);
-    //module.to(device);
+    //module = torch::jit::no_grad(module); //freez    //module.to(device);
     }
     catch (const c10::Error& e) {
     JSWARN << "error loading the model :-( ...\n";
@@ -204,6 +210,7 @@ void FnoRooIn::EvolveHydro() {
         //inputs.push_back(fno_input_tensor.unsqueeze(0).to(device)); //fno_input_tensor_unsqueeze); // .to(at::kMPS));
         inputs.push_back(fno_input_tensor.unsqueeze(0));
         // Execute the model and turn its output into a tensor.
+        //torch::NoGradGuard no_grad;
         output = module.forward(inputs).toTensor();
 
         shape = output.sizes();
@@ -254,18 +261,18 @@ void FnoRooIn::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
-  // TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
+  TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  // for (int i=0;i<nx_fno;i++)
-  //   for (int j=0;j<ny_fno;j++)
-  //   {
-  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
-  //   }
+  for (int i=0;i<nx_fno;i++)
+    for (int j=0;j<ny_fno;j++)
+    {
+        h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
+    }
 
-  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
-  // //h2dIS_root->Draw("colz");
-  // c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
+  TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  //h2dIS_root->Draw("colz");
+  c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
 
   output.reset();
   m_xyt->clear();
@@ -345,16 +352,19 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
   //std::cout<< tensorShapeInput.c_str() << std::endl;
   JSINFO << tensorShapeInput.c_str();
 
+  //Tremendous speed up !!!
+  auto accessor = flattened_tensor.accessor<float, 2>();
+
   for (int i = 0; i < number_of_cells; i++) {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
     //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
 
-    fluid_cell_info_ptr->energy_density = flattened_tensor[0][i].item<double>();
+    fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
     fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
-    fluid_cell_info_ptr->temperature = flattened_tensor[1][i].item<double>();
+    fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
     fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
-    fluid_cell_info_ptr->vx = flattened_tensor[2][i].item<double>();
-    fluid_cell_info_ptr->vy = flattened_tensor[3][i].item<double>();
+    fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
+    fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
     fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
     fluid_cell_info_ptr->mu_B = 0.0;
     fluid_cell_info_ptr->mu_C = 0.0;
