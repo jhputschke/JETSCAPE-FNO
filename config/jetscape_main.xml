@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-
+<?xml version="1.0" ?>
 <!-- Copyright (c) The JETSCAPE Collaboration, 2018 -->
 <!-- Modular, task-based framework for simulating all aspects of heavy-ion collisions -->
 <!-- For the list of contributors see AUTHORS. -->
@@ -7,8 +6,7 @@
 <!-- or via email to bugs.jetscape@gmail.com -->
 <!-- Distributed under the GNU General Public License 3.0 (GPLv3 or later). -->
 <!-- See COPYING for details. -->
-
- <jetscape>
+<jetscape>
 
   <!-- General settings -->
   <nEvents> 100 </nEvents>
@@ -17,10 +15,13 @@
 
   <!-- Technical settings -->
   <debug> off </debug>
-  <remark> off </remark>
+  <remark>
+off
+    </remark>
   <vlevel> 0 </vlevel>
   <nEvents_printout> 100 </nEvents_printout>
-  <enableAutomaticTaskListDetermination> true </enableAutomaticTaskListDetermination>
+  <enableAutomaticTaskListDetermination
+    > true </enableAutomaticTaskListDetermination>
 
   <!--  JetScape Writer Settings -->
   <outputFilename>test_out</outputFilename>
@@ -28,8 +29,10 @@
   <JetScapeWriterAsciiGZ> off </JetScapeWriterAsciiGZ>
   <JetScapeWriterHepMC> off </JetScapeWriterHepMC>
   <JetScapeWriterRootHepMC> off </JetScapeWriterRootHepMC>
-  <JetScapeWriterFinalStatePartonsAscii> off </JetScapeWriterFinalStatePartonsAscii>
-  <JetScapeWriterFinalStateHadronsAscii> off </JetScapeWriterFinalStateHadronsAscii>
+  <JetScapeWriterFinalStatePartonsAscii
+    > off </JetScapeWriterFinalStatePartonsAscii>
+  <JetScapeWriterFinalStateHadronsAscii
+    > off </JetScapeWriterFinalStateHadronsAscii>
   <JetScapeWriterQnVectorAscii>off</JetScapeWriterQnVectorAscii>
   <QnVector_pTmin>0</QnVector_pTmin>
   <QnVector_pTmax>6</QnVector_pTmax>
@@ -79,25 +82,30 @@
     <grid_step_z> 0.2 </grid_step_z>
 
     <Trento>
-    <PhysicsInputs  projectile='Pb'
-            target='Pb'
-            sqrts='2760'
-            cross-section='6.4'
-            normalization='13.9'>
+    <PhysicsInputs
+                projectile='Pb'
+                target='Pb'
+                sqrts='2760'
+                cross-section='6.4'
+                normalization='13.9'
+            >
     </PhysicsInputs>
-    <CutInputs  centrality-low='50'
-          centrality-high='60'>
+    <CutInputs centrality-low='50' centrality-high='60'>
     </CutInputs>
-    <TransInputs  reduced-thickness='0.0'
-            fluctuation="1.2"
-            nucleon-width="0.9"
-            nucleon-min-dist="1.2">
+    <TransInputs
+                reduced-thickness='0.0'
+                fluctuation="1.2"
+                nucleon-width="0.9"
+                nucleon-min-dist="1.2"
+            >
     </TransInputs>
-    <LongiInputs  mean-coeff="1.0"
-            std-coeff="3.0"
-            skew-coeff="0.0"
-            skew-type="1"
-            jacobian="0.8">
+    <LongiInputs
+                mean-coeff="1.0"
+                std-coeff="3.0"
+                skew-coeff="0.0"
+                skew-type="1"
+                jacobian="0.8"
+            >
     </LongiInputs>
     </Trento>
 
@@ -155,7 +163,8 @@
     <deltaT>0.1</deltaT>
     <formTime> -0.1</formTime>
     <maxT>20</maxT>
-    <tStart> 0.6 </tStart> <!-- Start time of jet quenching, proper time, fm/c   -->
+    <tStart
+        > 0.6 </tStart> <!-- Start time of jet quenching, proper time, fm/c   -->
     <mutex>ON</mutex>
     <AddLiquefier> false </AddLiquefier>
 
@@ -170,7 +179,8 @@
       <in_vac> 1 </in_vac>
       <recoil_on> 0 </recoil_on>
       <broadening_on> 0 </broadening_on>
-      <brick_med> 0 </brick_med>   <!-- Set brick_med to 1 while using Brick Hydro module-->
+      <brick_med
+            > 0 </brick_med>   <!-- Set brick_med to 1 while using Brick Hydro module-->
       <brick_length> 5.0 </brick_length>
       <hydro_Tc> 0.16 </hydro_Tc>
       <!-- Pick a qhat formula -->
@@ -183,12 +193,17 @@
       <!-- Type=6 : HTL q-hat with Virtuality dependent function int e^{-Cx}/(1+A*pow(ln(Q2),1) + B*pow(ln(Q2),2)) -->
       <!-- Type=7 : HTL q-hat with Virtuality dependent function  int x^{C}(1-x)^{D}/(1+A*pow(ln(Q2),1) + B*pow(ln(Q2),2))-->
       <QhatParametrizationType> 0 </QhatParametrizationType>
-      <qhat0> -2.0 </qhat0>  <!-- If Type=0, 1, 5,6,7 set qhat0 as negative since alphas will be used-->
+      <qhat0
+            > -2.0 </qhat0>  <!-- If Type=0, 1, 5,6,7 set qhat0 as negative since alphas will be used-->
       <alphas> 0.25 </alphas>
-      <qhatA> 10.0 </qhatA>    <!-- Always positive, Used only if QhatParametrizationType=5,6,7  -->
-      <qhatB> 10.0 </qhatB>    <!-- Always positive, Used only if QhatParametrizationType=5,6,7  -->
-      <qhatC> 1.0 </qhatC>    <!-- (0,100) for Type=6, and (-10,100) for Type=7, Used only if QhatParametrizationType=6,7  -->
-      <qhatD> 0.0 </qhatD>    <!-- (-10,100), Used only if QhatParametrizationType=7  -->
+      <qhatA
+            > 10.0 </qhatA>    <!-- Always positive, Used only if QhatParametrizationType=5,6,7  -->
+      <qhatB
+            > 10.0 </qhatB>    <!-- Always positive, Used only if QhatParametrizationType=5,6,7  -->
+      <qhatC
+            > 1.0 </qhatC>    <!-- (0,100) for Type=6, and (-10,100) for Type=7, Used only if QhatParametrizationType=6,7  -->
+      <qhatD
+            > 0.0 </qhatD>    <!-- (-10,100), Used only if QhatParametrizationType=7  -->
     </Matter>
 
     <Lbt>
@@ -198,11 +213,12 @@
       <only_leading> 0 </only_leading>
       <hydro_Tc> 0.16 </hydro_Tc>
       <alphas> 0.2 </alphas>
-      <run_alphas>1</run_alphas>   <!-- 0 for fixed alpha_s and 1 for running alpha_s -->
+      <run_alphas
+            >1</run_alphas>   <!-- 0 for fixed alpha_s and 1 for running alpha_s -->
     </Lbt>
 
     <Martini>
-      <name > Martini </name>
+      <name> Martini </name>
       <Q0> 2.0 </Q0>
       <alpha_s> 0.3 </alpha_s>
       <pcut> 2.0 </pcut>
@@ -265,7 +281,8 @@
       <tau0>0.001</tau0>
       <taus>0.4</taus>
       <dtau>0.005</dtau>
-      <input_filename_glasma>./epsilon-u-Hydro-t0.4-0.dat</input_filename_glasma>
+      <input_filename_glasma
+            >./epsilon-u-Hydro-t0.4-0.dat</input_filename_glasma>
     </Glasma>
 
     <NullPreDynamics> </NullPreDynamics>
@@ -328,11 +345,13 @@
       <load_viscous_info>0</load_viscous_info>
 
       <!-- PreEquilibrium evolution filename (plain binary format) -->
-      <PreEq_file>../examples/test_hydro_files/evolution_all_xyeta_fs.dat</PreEq_file>
+      <PreEq_file
+            >../examples/test_hydro_files/evolution_all_xyeta_fs.dat</PreEq_file>
 
       <!-- MUSIC hydro evolution filename (plain binary format) -->
       <!-- the associated input file specifies the grid information -->
-      <MUSIC_input_file>../examples/test_hydro_files/MUSIC_input</MUSIC_input_file>
+      <MUSIC_input_file
+            >../examples/test_hydro_files/MUSIC_input</MUSIC_input_file>
       <MUSIC_file>../examples/test_hydro_files/MUSIC_evo.dat</MUSIC_file>
       <!-- transition temperature between QGP and Hadron Resonance Gas -->
       <T_c>0.154</T_c>
@@ -368,7 +387,8 @@
       <shear_viscosity_2_slope>1.11</shear_viscosity_2_slope>
       <shear_viscosity_2_min>0.081</shear_viscosity_2_min>
       <!--bulk viscosity settings-->
-      <temperature_dependent_bulk_viscosity>0</temperature_dependent_bulk_viscosity>
+      <temperature_dependent_bulk_viscosity
+            >0</temperature_dependent_bulk_viscosity>
       <zeta_over_s_max>0</zeta_over_s_max>
       <zeta_over_s_T_peak_in_GeV>0.18</zeta_over_s_T_peak_in_GeV>
       <zeta_over_s_width_in_GeV>0.02</zeta_over_s_width_in_GeV>
@@ -407,6 +427,49 @@
       <Perform_CooperFrye_Feezeout>0</Perform_CooperFrye_Feezeout>
     </CLVisc>
 
+    <FNO>
+      <model_file>../fno_hydro/models/default.pt</model_file>
+
+      <fullHydroIn> 0 </fullHydroIn>
+      <centrality-low>0</centrality-low>
+      <centrality-high>10</centrality-high>
+       <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
+       <n_features>4</n_features>
+       <nx>60</nx>
+       <ny>60</ny>
+       <ntau>50</ntau>
+       <x_min>-15.0</x_min>
+       <y_min>-15.0</y_min>
+        <!-- <dx>0.5</dx>
+       <dy>0.5</dy> -->
+       <dtau>0.1</dtau>
+       <neta>1</neta>
+       <deta>0</deta>
+    </FNO>
+
+    <FNOROOIN>
+       <model_file
+        >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+      <root_file>/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
+
+      <centrality-low>0</centrality-low>
+      <centrality-high>10</centrality-high>
+       <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
+      <n_features>4</n_features>
+      <nx>60</nx>
+      <ny>60</ny>
+      <neta>1</neta>
+      <ntau>50</ntau>
+      <x_min>-15.0</x_min>
+      <y_min>-15.0</y_min>
+       <!-- <dx>0.5</dx>
+      <dy>0.5</dy> -->
+      <dtau>0.1</dtau>
+      <deta>0</deta>
+      <neta>1</neta>
+
+    </FNOROOIN>
+
   </Hydro>
 
   <!-- Jet Hadronization Module -->
@@ -432,14 +495,18 @@
        <!--switch for recombination biased by the time of the partons-->
        <recobias_t>0</recobias_t>
        <hydro_Tc>0.16</hydro_Tc>
-       <eta_max_boost_inv>2.0</eta_max_boost_inv> <!--only relevant for boost invariant hydro, max eta for thermal parton sampler-->
+       <eta_max_boost_inv
+        >2.0</eta_max_boost_inv> <!--only relevant for boost invariant hydro, max eta for thermal parton sampler-->
        <!--free-straming propagation of hadrons after hadronization-->
        <had_postprop>0.0</had_postprop>
        <!--free-streaming of partons before hadronization-->
        <part_prop>0.0</part_prop>
-       <pythia_decays>on</pythia_decays> <!-- lets the particles given to pythia decay-->
-       <tau0Max>10.0</tau0Max> <!-- only particles with tau0 < tau0Max (given in mm/c) can decay, increase to include weak decays-->
-       <weak_decays>depracted</weak_decays> <!-- use the parameters pythia_decays and tau0Max, this parameter is only a dummy to make old xml files work-->
+       <pythia_decays
+        >on</pythia_decays> <!-- lets the particles given to pythia decay-->
+       <tau0Max
+        >10.0</tau0Max> <!-- only particles with tau0 < tau0Max (given in mm/c) can decay, increase to include weak decays-->
+       <weak_decays
+        >depracted</weak_decays> <!-- use the parameters pythia_decays and tau0Max, this parameter is only a dummy to make old xml files work-->
        <!-- You can add any number of additional lines to initialize pythia hadronization here -->
        <!-- Note that if the tag exists it cannot be empty (tinyxml produces a segfault) -->
        <!-- <LinesToRead> -->
@@ -449,7 +516,8 @@
        <!-- Switch to include more pythia particles from an additional xml file with particle information -->
        <additional_pythia_particles>0</additional_pythia_particles>
        <!-- Path to file with additional particles for pythia (for higher reco_Mlevelmax)-->
-       <additional_pythia_particles_path>../config/HH_LightExcitedMesons.xml</additional_pythia_particles_path>
+       <additional_pythia_particles_path
+        >../config/HH_LightExcitedMesons.xml</additional_pythia_particles_path>
    </JetHadronization>
 
   <!-- Particlization Module  -->
@@ -463,13 +531,15 @@
       <hydro_mode>1</hydro_mode>
 
       <!-- file path for the default input file  -->
-      <iSS_input_file>../external_packages/iSS/iSS_parameters.dat</iSS_input_file>
+      <iSS_input_file
+            >../external_packages/iSS/iSS_parameters.dat</iSS_input_file>
       <!-- directory path where the hydro surface is stored  -->
       <iSS_working_path>.</iSS_working_path>
       <!-- file path for the default table files  -->
       <iSS_table_path>../external_packages/iSS/iSS_tables</iSS_table_path>
       <!-- file path for the default particle table files  -->
-      <iSS_particle_table_path>../external_packages/iSS/iSS_tables</iSS_particle_table_path>
+      <iSS_particle_table_path
+            >../external_packages/iSS/iSS_tables</iSS_particle_table_path>
       <!-- hadron species list  0: PDG 2005; 1: UrQMD; 2: SMASH -->
       <afterburner_type>2</afterburner_type>
 
@@ -491,9 +561,12 @@
     <!-- SMASH -->
     <SMASH>
       <name>SMASH</name>
-      <SMASH_config_file>../external_packages/smash/smash_config.yaml</SMASH_config_file>
-      <SMASH_particles_file>../external_packages/smash/smash_code/input/particles.txt</SMASH_particles_file>
-      <SMASH_decaymodes_file>../external_packages/smash/smash_code/input/decaymodes.txt</SMASH_decaymodes_file>
+      <SMASH_config_file
+            >../external_packages/smash/smash_config.yaml</SMASH_config_file>
+      <SMASH_particles_file
+            >../external_packages/smash/smash_code/input/particles.txt</SMASH_particles_file>
+      <SMASH_decaymodes_file
+            >../external_packages/smash/smash_code/input/decaymodes.txt</SMASH_decaymodes_file>
       <!-- time in fm/c in the computational frame, when the simulation shoud be ended -->
       <end_time>1000.0</end_time>
       <!-- 0 - run the full afterburner, 1 - only decay the resonances without even propagation -->
