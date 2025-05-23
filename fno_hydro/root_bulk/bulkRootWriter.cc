@@ -85,8 +85,8 @@ class BulkRootWriter : public JetScapeModuleBase
 {
   public:
 
-  BulkRootWriter() : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = ""; initBranch=false;}
-  BulkRootWriter(string m_oName) : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = m_oName; initBranch=false;}
+  BulkRootWriter() : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = ""; initBranch=false; nFeatures=4;}
+  BulkRootWriter(string m_oName) : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = m_oName; initBranch=false; nFeatures=4;}
   virtual ~BulkRootWriter();
 
   void Init();
@@ -101,10 +101,13 @@ class BulkRootWriter : public JetScapeModuleBase
   TTree *t;
 
   bool initBranch;
+  int nFeatures;
 
-  std::vector<std::vector<std::vector<double>>> m_xyt;
-  std::vector<std::vector<std::vector<double>>> m_xyt2;
-
+  // REMARK: Check with float precision ...
+  //std::vector<std::vector<std::vector<double>>> m_xyt;
+  //std::vector<std::vector<std::vector<double>>> m_xyt2;
+  std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt;
+  std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt2;
 };
 
 // -------------------------------------
@@ -155,7 +158,8 @@ int main(int argc, char** argv)
 
     // -------------------------------------
 
-    auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_test.root");
+    auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root");
+    //auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_test.root");
     jetscape->Add(bulkWriter);
 
     //auto writer= make_shared<JetScapeWriterAscii> ("test_out.dat");
@@ -203,13 +207,25 @@ BulkRootWriter::~BulkRootWriter() {
     f->cd();f->ls(); t->Print(); f->Write();f->Close();
 }
 
+// Can be done in Init too ...
 void BulkRootWriter::InitBranch(int nX, int nY, int nT)
 {
     JSINFO<<"InitBranch Custom Resolution (x,y,tau)        : "<<nX<<" "<<nY<<" "<<nT;
+    JSINFO<<"# of features:"<<nFeatures;
     initBranch = true;
 
-    m_xyt=std::vector<std::vector<std::vector<double>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
-
+    //m_xyt=std::vector<std::vector<std::vector<std::vector<double>>>> (nX, std::vector<std::vector<std::vector<double>>>(nY, std::vector<std::vector<double>>(nT)));
+    m_xyt = std::vector<std::vector<std::vector<std::vector<double>>>>(
+            nX,
+            std::vector<std::vector<std::vector<double>>>(
+                nY,
+                std::vector<std::vector<double>>(
+                    nT,
+                    std::vector<double>(nFeatures)
+                )
+            )
+        );
+    //REMARK: Maybe better two trees than two branches, could be easier to load only one tree via uproot than a single branch !????
     t->Branch("user_res",&m_xyt);
     t->Branch("hydro_res",&m_xyt2);
 }
@@ -269,8 +285,19 @@ void BulkRootWriter::Exec() {
     // Full Hydro evolution ...
     // REMARK: Figure out dimnensions to save other cell info ... channels in FNO !!!
 
-    m_xyt2=std::vector<std::vector<std::vector<double>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
+    //m_xyt2=std::vector<std::vector<std::vector<std::vector<double>>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
+    m_xyt2 = std::vector<std::vector<std::vector<std::vector<double>>>>(
+            nX,
+            std::vector<std::vector<std::vector<double>>>(
+                nY,
+                std::vector<std::vector<double>>(
+                    nT,
+                    std::vector<double>(nFeatures)
+                )
+            )
+        );
 
+    /*
     for (int k=0; k<(nT); k++){
         for (int i=0; i<(nX); i++){
             for (int j=-0; j<(nY); j++){
@@ -278,10 +305,17 @@ void BulkRootWriter::Exec() {
                 int nIndex = bInfo.CellIndex(k,i,j,0); // last eta here index 0 since boost invariant ...
                 auto mCell = bInfo.data.at(nIndex);
 
-                m_xyt2[i][j][k] = (mCell.energy_density); //temperature; //energy_density
+                m_xyt2[i][j][k][0] = (mCell.energy_density); //temperature; //energy_density
+                m_xyt2[i][j][k][1] = (mCell.temperature);
+                m_xyt2[i][j][k][2] = (mCell.vx);
+                m_xyt2[i][j][k][3] = (mCell.vy);
+                // 2+1D vz = 0  ...
+                //m_xyt2[i][j][k][4] = (mCell.vz);
+                //cout<<mCell.vx<<" "<<mCell.vy<<" "<<mCell.vz<<endl;
             }
         }
     }
+    */
 
     // -------------------------------------
     //
@@ -299,7 +333,12 @@ void BulkRootWriter::Exec() {
 
                 auto mCell = bInfo.get(tau_In, x_In, y_In, 0);
 
-                m_xyt[i][j][k] = (mCell.energy_density); //temperature; //energy_density
+                m_xyt[i][j][k][0] = (mCell.energy_density);
+                m_xyt[i][j][k][1] = (mCell.temperature); //temperature; //energy_density
+                m_xyt[i][j][k][2] = (mCell.vx);
+                m_xyt[i][j][k][3] = (mCell.vy);
+                //m_xyt[i][j][k][1] = (mCell.vz);
+                 // 2+1D vz = 0  ...
             }
         }
     }
@@ -308,7 +347,7 @@ void BulkRootWriter::Exec() {
 
     t->Fill();
     //t->Print();
-    //REMARK: Check for memory leaks !!!!
+    //REMARK: Check for memory leaks --> does not look like there is one !!!!
     m_xyt2.clear(); //maybe better resize it above ...
   }
   else {JSWARN<<"No hydro pointer available ...";}

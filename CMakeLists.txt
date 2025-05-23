@@ -330,10 +330,6 @@ include_directories(./external_packages/)
 include_directories(./external_packages/gtl/include )
 include_directories(./external_packages/hydro_from_external_file )
 include_directories(./examples/ )
-if ("${ROOT_FOUND}")
-    include_directories(./src/root)
-    #add_subdirectory(./src/root)
-endif()
 
 ### include_directories will be expanded as packages are found
 
@@ -465,7 +461,7 @@ if (${ROOT_FOUND})
     #  add_executable(PythiaBrickTestRoot ./examples/custom_examples/PythiaBrickTestRoot.cc)
     #  target_link_libraries(PythiaBrickTestRoot JetScape)
     if ( USE_MUSIC )
-        add_subdirectory(./src/root_bulk)
+        add_subdirectory(./fno_hydro/root_bulk)
     endif(USE_MUSIC)
 
     # For now, in principle ROOT is not needed to use FNO ... but for now for QA ...

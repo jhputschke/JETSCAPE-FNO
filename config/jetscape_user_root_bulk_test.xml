@@ -90,6 +90,13 @@
           <surface_in_memory>1</surface_in_memory>
           <Initial_time_tau_0>0.5</Initial_time_tau_0>
           <shear_viscosity_eta_over_s>0</shear_viscosity_eta_over_s>
+
+          <!--> REMARK: Make sure to use ideal hydro, otherwise soft hadronization needs additional information in FNO etc !!!!
+          Include_Shear_Visc_Yes_1_No_0 0    # include shear viscous effect
+          Include_Bulk_Visc_Yes_1_No_0 0     # include bulk viscous effect
+          Include_second_order_terms 0       # include second order non-linear coupling terms
+          -->
+
           <!--
           <T_dependent_Shear_to_S_ratio>3</T_dependent_Shear_to_S_ratio>
           <eta_over_s_T_kink_in_GeV>0.223</eta_over_s_T_kink_in_GeV>
@@ -102,6 +109,7 @@
           <zeta_over_s_width_in_GeV>0.072</zeta_over_s_width_in_GeV>
           <zeta_over_s_lambda_asymm>-0.122</zeta_over_s_lambda_asymm>
           -->
+
           <freezeout_temperature>0.136</freezeout_temperature>
       </MUSIC>
 

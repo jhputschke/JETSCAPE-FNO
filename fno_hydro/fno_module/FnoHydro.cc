@@ -25,6 +25,7 @@
 #include "JetScapeLogger.h"
 //#include "surfaceCell.h"
 #include "FnoHydro.h"
+#include "eos.h"
 
 #include <Riostream.h>
 #include "TRandom.h"
@@ -80,6 +81,8 @@ double get_temperature_ideal_EOS(double eps, double rhob = 0) {
             / (2 * (mNc * mNc - 1) + 7. / 2 * mNc * mNf),
         .25);
 }
+
+std::unique_ptr<EOS> fnoEOS;
 
 // Get from actual grid ...
 // Think about resizing etc maybe use same interpoolation as for fluid cells !???
@@ -220,9 +223,12 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
   cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
   cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
 
-  /*
   freezeout_temperature =
       GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
+
+  fnoEOS=make_unique<EOS>(91);
+
+  /*
   if (freezeout_temperature > 0.05) {
     music_hydro_ptr->set_parameter("T_freeze", freezeout_temperature);
   } else {

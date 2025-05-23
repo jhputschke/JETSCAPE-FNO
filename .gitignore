@@ -20,4 +20,5 @@ external_packages/smash/smash_code/
 external_packages/ipglasma
 fno_hydro/models
 fno_hydro/libtorch
+fno_hydro/libtorch/*
 *__cmake*
