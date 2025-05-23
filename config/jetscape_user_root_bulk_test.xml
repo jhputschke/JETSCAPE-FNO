@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 1 </nEvents>
+  <nEvents> 10 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -129,8 +129,9 @@
 
       <FNOROOIN>
         <model_file
-          >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
-        <root_file>/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
+            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+        <root_file
+            >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
 
         <fullHydroIn> 0 </fullHydroIn>
         <centrality-low>0</centrality-low>
