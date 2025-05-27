@@ -25,6 +25,7 @@
 #include "JetScapeLogger.h"
 //#include "surfaceCell.h"
 #include "FnoRooIn.h"
+#include "util.h"
 
 #include <Riostream.h>
 #include "TRandom.h"
@@ -139,6 +140,10 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   n_features = GetXMLElementInt({"Hydro", "FNOROOIN", "n_features"});
 
+  int EOS_id_MUSIC = GetXMLElementInt({"Hydro", "FNOROOIN", "EOS_id_MUSIC"});
+  JSINFO<<"Use EOS (Music id) = "<<EOS_id_MUSIC;
+  fnoEOS=make_unique<EOS>(EOS_id_MUSIC);
+
   cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
   cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
   cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
@@ -168,7 +173,7 @@ void FnoRooIn::EvolveHydro() {
   if (!fullHydroIn) {
     torch::Tensor fno_input_tensor = torch::zeros({n_features, nx_fno, ny_fno, 1});
 
-    string tensorShapeInput = "Input Tesnor shape from Root file tauId = 0 : ";
+    string tensorShapeInput = "Input Tensor shape from Root file tauId = 0 : ";
     c10::IntArrayRef shape = fno_input_tensor.sizes();
     //cout<< "Tensor shape: ";
         for (int i = 0; i < shape.size(); ++i) {
@@ -214,7 +219,7 @@ void FnoRooIn::EvolveHydro() {
         output = module.forward(inputs).toTensor();
 
         shape = output.sizes();
-        tensorShapeInput = "Output Tesnor shape from FNO : ";
+        tensorShapeInput = "Output Tensor shape from FNO : ";
         //c10::IntArrayRef shape = fno_input_tensor.sizes();
         //cout<< "Tensor shape: ";
         for (int i = 0; i < shape.size(); ++i) {
@@ -261,6 +266,7 @@ void FnoRooIn::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
+  /*
   TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
   for (int i=0;i<nx_fno;i++)
@@ -268,11 +274,11 @@ void FnoRooIn::EvolveHydro() {
     {
         h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
     }
-
-  TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  */
+  //TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  //h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
   //h2dIS_root->Draw("colz");
-  c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
+  //c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
 
   output.reset();
   m_xyt->clear();
@@ -417,6 +423,14 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
               fluid_cell_info_ptr->bulk_Pi = 0.0;
               //StoreHydroEvolutionHistory(fluid_cell_info_ptr);
               bulk_info.data.push_back(*fluid_cell_info_ptr);
+
+              //DEBUG: Check EOS from Music to get temperatyre from edensity and compare to stored temperature from ROOT file ...
+              if ((*m_xyt)[i][j][k][0] > 0.1 && k<1) {
+                //With correct units !!!! edinst/hbarc and temp from EOS *habrc!!!!
+                cout<<(*m_xyt)[i][j][k][0]<<" "<<(*m_xyt)[i][j][k][1]<<" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0]/Util::hbarc, 0)*Util::hbarc<<endl;
+                //cout<<Util::hbarc<<endl;
+                //cout<<(*m_xyt)[i][j][k][1]/fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
+              }
           }
 }
 

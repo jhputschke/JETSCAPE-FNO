@@ -56,7 +56,8 @@ off
         <headerVersion>2</headerVersion>
     </FinalStatePartons>
     <!--JetScapeWriterFinalStateHadronsAscii/JetScapeWriterFinalStatePartonsAscii output in binary mode, only ascii or only binary switch (not both possible at the same time)-->
-    <JetscapeWriterFinalStateBinaryOutput> 0 </JetscapeWriterFinalStateBinaryOutput>
+    <JetscapeWriterFinalStateBinaryOutput
+        > 0 </JetscapeWriterFinalStateBinaryOutput>
   </Writer>
 
   <!--  Random Settings. For now, just a global  seed. -->
@@ -433,6 +434,7 @@ off
       <fullHydroIn> 0 </fullHydroIn>
       <centrality-low>0</centrality-low>
       <centrality-high>10</centrality-high>
+      <EOS_id_MUSIC>91</EOS_id_MUSIC>
        <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
        <n_features>4</n_features>
        <nx>60</nx>
@@ -449,11 +451,13 @@ off
 
     <FNOROOIN>
        <model_file
-        >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
-      <root_file>/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
+            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+      <root_file
+            >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file>
 
       <centrality-low>0</centrality-low>
       <centrality-high>10</centrality-high>
+      <EOS_id_MUSIC>91</EOS_id_MUSIC>
        <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
       <n_features>4</n_features>
       <nx>60</nx>

@@ -24,6 +24,7 @@
 //#include "data_struct.h" /in iSS ..
 #include "JetScapeConstants.h"
 #include "MakeUniqueHelper.h"
+#include "eos.h"
 
 #include <torch/script.h>
 #include <torch/torch.h>
@@ -66,6 +67,8 @@ private:
   torch::jit::script::Module module;
   torch::Tensor output;
   torch::Device device;
+
+  std::unique_ptr<EOS> fnoEOS;
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.

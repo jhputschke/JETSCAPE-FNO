@@ -312,10 +312,13 @@ void BulkRootWriter::Exec() {
                 // 2+1D vz = 0  ...
                 //m_xyt2[i][j][k][4] = (mCell.vz);
                 //cout<<mCell.vx<<" "<<mCell.vy<<" "<<mCell.vz<<endl;
+                //if ((m_xyt2)[i][j][k][0] > 0.1 && k<1) {
+                //  cout<<(m_xyt2)[i][j][k][0]<<" "<<(m_xyt2)[i][j][k][1]<<endl;//" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
+                // }
             }
         }
     }
-    */
+   */
 
     // -------------------------------------
     //
@@ -339,6 +342,9 @@ void BulkRootWriter::Exec() {
                 m_xyt[i][j][k][3] = (mCell.vy);
                 //m_xyt[i][j][k][1] = (mCell.vz);
                  // 2+1D vz = 0  ...
+                 //if ((m_xyt)[i][j][k][0] > 0.1 && k<1) {
+                   //cout<<(m_xyt)[i][j][k][0]<<" "<<(m_xyt)[i][j][k][1]<<endl;//" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
+                   // }
             }
         }
     }
