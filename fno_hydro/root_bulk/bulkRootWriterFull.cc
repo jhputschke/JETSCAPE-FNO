@@ -215,7 +215,7 @@ BulkRootWriter::~BulkRootWriter() {
 // Can be done in Init too ...
 void BulkRootWriter::InitBranch(int nX, int nY, int nT)
 {
-    JSINFO<<"InitBranch Custom Resolution (x,y,tau)        : "<<nX<<" "<<nY<<" "<<nT;
+    JSINFO<<"InitBranch Custom Resolution (x,y) all tau    : "<<nX<<" "<<nY;//<<" "<<nT;
     JSINFO<<"# of features:"<<nFeatures;
     initBranch = true;
 
@@ -352,6 +352,24 @@ void BulkRootWriter::Exec() {
         }
     }
 
+    // -------------------------------------
+    // Freezeout surface vector/grid to be stored ...
+    // REMARK: Figure out what format and if it useable for FNO !??? ...
+    //
+    // ==> minimum info for further usage in case of ideal hydro for now ... Follow up !!!!
+    //
+    /*
+    std::vector<SurfaceCellInfo> m_surfaceCellVector;
+    hydro.lock()->getSurfaceCellVector(m_surfaceCellVector);
+
+    //DEBUG: ...
+    for (auto& cell : m_surfaceCellVector) {
+        // Process each cell in the surface vector
+        //if (cell.eta>0) cout<<"AAAhhhh ...."<<endl;
+        cout<<cell.tau<<" "<<cell.x<<" "<<cell.y<<" "<<cell.eta<<" "<<cell.energy_density<<" "<<cell.temperature<<" "<<cell.pressure<<" "<<endl;
+        cout<<" "<<cell.d3sigma_mu[0]<<" "<<cell.d3sigma_mu[1]<<" "<<cell.d3sigma_mu[2]<<" "<<cell.d3sigma_mu[3]<<" "<<endl;
+    }
+    */
     // -------------------------------------
 
     t->Fill();
