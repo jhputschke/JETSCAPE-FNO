@@ -217,12 +217,13 @@ void FnoHydro::InitializeHydro(Parameter parameter_list) {
 
   n_features = GetXMLElementInt({"Hydro", "FNO", "n_features"});
 
-  cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
-  cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
-  cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
+  JSINFO<<"# of FNO training features = "<<n_features;
 
-  freezeout_temperature =
-      GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
+  //cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
+  //cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
+  //cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
+
+  freezeout_temperature = GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
 
   int EOS_id_MUSIC = GetXMLElementInt({"Hydro", "FNOROOIN", "EOS_id_MUSIC"});
   JSINFO<<"Use EOS (Music id) = "<<EOS_id_MUSIC;
@@ -369,11 +370,19 @@ void FnoHydro::EvolveHydro() {
 
         //for (int k=0;k<50;k++) {
         int k=0;
-        fno_input_tensor[0][i][j][k] = ed;
-        fno_input_tensor[1][i][j][k] = T;
-        // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
-        fno_input_tensor[2][i][j][k] = 0;
-        fno_input_tensor[3][i][j][k] = 0;
+        if (n_features == 4 ) {
+            fno_input_tensor[0][i][j][k] = ed;
+            fno_input_tensor[1][i][j][k] = T;
+            // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
+            fno_input_tensor[2][i][j][k] = 0;
+            fno_input_tensor[3][i][j][k] = 0;
+        }
+        else if (n_features == 3) {
+            fno_input_tensor[0][i][j][k] = ed;
+            fno_input_tensor[1][i][j][k] = 0;
+            fno_input_tensor[2][i][j][k] = 0;
+        }
+        else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
 
         //}
     }
@@ -683,13 +692,23 @@ void FnoHydro::PassHydroEvolutionHistoryToFramework() {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
     //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
 
-    fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
-    fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
-    fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
-    fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
-    fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
-    fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
+    if (n_features == 4 ) {
+        fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
+        fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
+        fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
+        fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
+    }
+    else if (n_features == 3) {
+        fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
+        fluid_cell_info_ptr->temperature = GetTemperatureFromEos(accessor[0][i]); //flattened_tensor[1][i].item<double>();
+        fluid_cell_info_ptr->vx = accessor[1][i]; //flattened_tensor[2][i].item<double>();
+        fluid_cell_info_ptr->vy = accessor[2][i];
+    }
+    else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
+
     fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
+    fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+    fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
     fluid_cell_info_ptr->mu_B = 0.0;
     fluid_cell_info_ptr->mu_C = 0.0;
     fluid_cell_info_ptr->mu_S = 0.0;
@@ -746,6 +765,10 @@ void FnoHydro::PassHydroSurfaceToFramework() {
     }
 }
 */
+
+double FnoHydro::GetTemperatureFromEos(double ed) {
+    return fnoEOS->get_temperature(ed/Util::hbarc, 0)*Util::hbarc;
+}
 
 void FnoHydro::GetHydroInfo(
     Jetscape::real t, Jetscape::real x, Jetscape::real y, Jetscape::real z,

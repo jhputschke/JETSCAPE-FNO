@@ -62,13 +62,15 @@ private:
   TFile *f;
   TTree *t;
 
-  std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
+  //std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
+  std::vector<std::vector<std::vector<std::vector<float>>>> *m_xyt;
 
   torch::jit::script::Module module;
   torch::Tensor output;
   torch::Device device;
 
   std::unique_ptr<EOS> fnoEOS;
+  double GetTemperatureFromEos(double ed);
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.

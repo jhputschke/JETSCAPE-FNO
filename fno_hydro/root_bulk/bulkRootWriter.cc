@@ -85,8 +85,8 @@ class BulkRootWriter : public JetScapeModuleBase
 {
   public:
 
-  BulkRootWriter() : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = ""; initBranch=false; nFeatures=4;}
-  BulkRootWriter(string m_oName) : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = m_oName; initBranch=false; nFeatures=4;}
+  BulkRootWriter() : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = ""; initBranch=false; nFeatures=3;}
+  BulkRootWriter(string m_oName) : JetScapeModuleBase() {SetId("BulkRootWriter"); oName = m_oName; initBranch=false; nFeatures=3;}
   virtual ~BulkRootWriter();
 
   void Init();
@@ -106,8 +106,11 @@ class BulkRootWriter : public JetScapeModuleBase
   // REMARK: Check with float precision ...
   //std::vector<std::vector<std::vector<double>>> m_xyt;
   //std::vector<std::vector<std::vector<double>>> m_xyt2;
-  std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt;
-  std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt2;
+  //std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt;
+  //std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt2;
+
+  std::vector<std::vector<std::vector<std::vector<float>>>> m_xyt;
+  std::vector<std::vector<std::vector<std::vector<float>>>> m_xyt2;
 };
 
 // -------------------------------------
@@ -215,13 +218,13 @@ void BulkRootWriter::InitBranch(int nX, int nY, int nT)
     initBranch = true;
 
     //m_xyt=std::vector<std::vector<std::vector<std::vector<double>>>> (nX, std::vector<std::vector<std::vector<double>>>(nY, std::vector<std::vector<double>>(nT)));
-    m_xyt = std::vector<std::vector<std::vector<std::vector<double>>>>(
+    m_xyt = std::vector<std::vector<std::vector<std::vector<float>>>>(
             nX,
-            std::vector<std::vector<std::vector<double>>>(
+            std::vector<std::vector<std::vector<float>>>(
                 nY,
-                std::vector<std::vector<double>>(
+                std::vector<std::vector<float>>(
                     nT,
-                    std::vector<double>(nFeatures)
+                    std::vector<float>(nFeatures)
                 )
             )
         );
@@ -263,12 +266,17 @@ void BulkRootWriter::Exec() {
 
     double xMin = bInfo.XMin();
     double xMax = bInfo.XMax(); //same for y axis ...
+    double tauMax = bInfo.TauMax();
+
+    //DBEUG:
+    cout<<nT<<" "<<tauMax<<endl;
+
     double dX = bInfo.dx;
     double dTau = bInfo.dtau;
 
-    double TauMax = 5.0; //in fermi ..
+    double m_TauMax = 5.0; //in fermi ..
     double m_dTau = 0.1; //in fermi ...
-    int m_nT = TauMax/m_dTau;
+    int m_nT = m_TauMax/m_dTau;
 
     double m_dX = 0.5;
     int m_nX = (xMax-xMin+dX)/m_dX;
@@ -285,17 +293,19 @@ void BulkRootWriter::Exec() {
     // Full Hydro evolution ...
     // REMARK: Figure out dimnensions to save other cell info ... channels in FNO !!!
 
-    //m_xyt2=std::vector<std::vector<std::vector<std::vector<double>>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
-    m_xyt2 = std::vector<std::vector<std::vector<std::vector<double>>>>(
+    //m_xyt2=std::vector<std::vector<std::vector<std::vector<float>>>>(nX, std::vector<std::vector<float>>(nY, std::vector<float>(nT)));
+    /*
+    m_xyt2 = std::vector<std::vector<std::vector<std::vector<float>>>>(
             nX,
-            std::vector<std::vector<std::vector<double>>>(
+            std::vector<std::vector<std::vector<float>>>(
                 nY,
-                std::vector<std::vector<double>>(
+                std::vector<std::vector<float>>(
                     nT,
-                    std::vector<double>(nFeatures)
+                    std::vector<float>(nFeatures)
                 )
             )
         );
+    */
 
     /*
     for (int k=0; k<(nT); k++){
@@ -305,10 +315,10 @@ void BulkRootWriter::Exec() {
                 int nIndex = bInfo.CellIndex(k,i,j,0); // last eta here index 0 since boost invariant ...
                 auto mCell = bInfo.data.at(nIndex);
 
-                m_xyt2[i][j][k][0] = (mCell.energy_density); //temperature; //energy_density
-                m_xyt2[i][j][k][1] = (mCell.temperature);
-                m_xyt2[i][j][k][2] = (mCell.vx);
-                m_xyt2[i][j][k][3] = (mCell.vy);
+                m_xyt2[i][j][k][0] = (float) (mCell.energy_density); //temperature; //energy_density
+                //m_xyt2[i][j][k][1] = (float) (mCell.temperature);
+                m_xyt2[i][j][k][1] = (float) (mCell.vx);
+                m_xyt2[i][j][k][2] = (float) (mCell.vy);
                 // 2+1D vz = 0  ...
                 //m_xyt2[i][j][k][4] = (mCell.vz);
                 //cout<<mCell.vx<<" "<<mCell.vy<<" "<<mCell.vz<<endl;
@@ -336,10 +346,10 @@ void BulkRootWriter::Exec() {
 
                 auto mCell = bInfo.get(tau_In, x_In, y_In, 0);
 
-                m_xyt[i][j][k][0] = (mCell.energy_density);
-                m_xyt[i][j][k][1] = (mCell.temperature); //temperature; //energy_density
-                m_xyt[i][j][k][2] = (mCell.vx);
-                m_xyt[i][j][k][3] = (mCell.vy);
+                m_xyt[i][j][k][0] = (float) (mCell.energy_density);
+                //m_xyt[i][j][k][1] = (float) (mCell.temperature); //temperature; //energy_density
+                m_xyt[i][j][k][1] = (float) (mCell.vx);
+                m_xyt[i][j][k][2] = (float) (mCell.vy);
                 //m_xyt[i][j][k][1] = (mCell.vz);
                  // 2+1D vz = 0  ...
                  //if ((m_xyt)[i][j][k][0] > 0.1 && k<1) {

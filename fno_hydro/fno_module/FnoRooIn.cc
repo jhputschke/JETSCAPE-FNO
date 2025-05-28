@@ -140,13 +140,17 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   n_features = GetXMLElementInt({"Hydro", "FNOROOIN", "n_features"});
 
+  JSINFO<<"# of FNO training features = "<<n_features;
+
+  freezeout_temperature = GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
+
   int EOS_id_MUSIC = GetXMLElementInt({"Hydro", "FNOROOIN", "EOS_id_MUSIC"});
   JSINFO<<"Use EOS (Music id) = "<<EOS_id_MUSIC;
   fnoEOS=make_unique<EOS>(EOS_id_MUSIC);
 
-  cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
-  cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
-  cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
+  //cout<<x_min_fno<<" "<<y_min_fno<<" "<<nx_fno<<" "<<ny_fno<<" "<<endl;
+  //cout<<dx_fno<<" "<<dy_fno<<" "<<endl;
+  //cout<<ntau_fno<<" "<<dtau_fno<<" "<<endl;
 }
 
 void FnoRooIn::EvolveHydro() {
@@ -192,12 +196,20 @@ void FnoRooIn::EvolveHydro() {
             {
                 //cout<<k<<endl;
                 //h2dIS_root->Fill(i,j,(*m_xyt)[i][j][k][0]);
-
-                fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0];
-                fno_input_tensor[1][i][j][k] = (*m_xyt)[i][j][k][1];
-                // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
-                fno_input_tensor[2][i][j][k] = 0;
-                fno_input_tensor[3][i][j][k] = 0;
+                if (n_features == 4 ) {
+                    fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0];
+                    fno_input_tensor[1][i][j][k] = (*m_xyt)[i][j][k][1];
+                    // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
+                    fno_input_tensor[2][i][j][k] = 0;
+                    fno_input_tensor[3][i][j][k] = 0;
+                }
+                else if (n_features == 3) {
+                    fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0];
+                    // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
+                    fno_input_tensor[1][i][j][k] = 0;
+                    fno_input_tensor[2][i][j][k] = 0;
+                }
+                else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
             }
         }
 
@@ -365,13 +377,23 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
     std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
     //music_hydro_ptr->get_fluid_cell_with_index(i, fluidCell_ptr);
 
-    fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
-    fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
-    fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
-    fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
-    fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
-    fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
+    if (n_features == 4 ) {
+        fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
+        fluid_cell_info_ptr->temperature = accessor[1][i]; //flattened_tensor[1][i].item<double>();
+        fluid_cell_info_ptr->vx = accessor[2][i]; //flattened_tensor[2][i].item<double>();
+        fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
+    }
+    else if (n_features == 3) {
+        fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
+        fluid_cell_info_ptr->temperature = GetTemperatureFromEos(accessor[0][i]); //flattened_tensor[1][i].item<double>();
+        fluid_cell_info_ptr->vx = accessor[1][i]; //flattened_tensor[2][i].item<double>();
+        fluid_cell_info_ptr->vy = accessor[2][i];
+    }
+    else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
+
     fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
+    fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+    fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
     fluid_cell_info_ptr->mu_B = 0.0;
     fluid_cell_info_ptr->mu_C = 0.0;
     fluid_cell_info_ptr->mu_S = 0.0;
@@ -403,14 +425,23 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
 
               //cout<<i<<" "<<j<<" "<<k<<endl;
               //cout<<output[0][i][j][k].item<double>()<<endl;
+              if (n_features == 4 ) {
+                fluid_cell_info_ptr->energy_density = (*m_xyt)[i][j][k][0];
+                fluid_cell_info_ptr->temperature = (*m_xyt)[i][j][k][1];
+                fluid_cell_info_ptr->vx =(*m_xyt)[i][j][k][2];
+                fluid_cell_info_ptr->vy =(*m_xyt)[i][j][k][3];
+              }
+              else if (n_features == 3) {
+                  fluid_cell_info_ptr->energy_density = (*m_xyt)[i][j][k][0];
+                  fluid_cell_info_ptr->temperature = GetTemperatureFromEos((*m_xyt)[i][j][k][0]);
+                  fluid_cell_info_ptr->vx =(*m_xyt)[i][j][k][1];
+                  fluid_cell_info_ptr->vy =(*m_xyt)[i][j][k][2];
+              }
+              else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
 
-              fluid_cell_info_ptr->energy_density = (*m_xyt)[i][j][k][0];
-              fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
-              fluid_cell_info_ptr->temperature = (*m_xyt)[i][j][k][1];
-              fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
-              fluid_cell_info_ptr->vx =(*m_xyt)[i][j][k][2];
-              fluid_cell_info_ptr->vy =(*m_xyt)[i][j][k][3];
               fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
+              fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+              fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
               fluid_cell_info_ptr->mu_B = 0.0;
               fluid_cell_info_ptr->mu_C = 0.0;
               fluid_cell_info_ptr->mu_S = 0.0;
@@ -425,13 +456,20 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
               bulk_info.data.push_back(*fluid_cell_info_ptr);
 
               //DEBUG: Check EOS from Music to get temperatyre from edensity and compare to stored temperature from ROOT file ...
-              if ((*m_xyt)[i][j][k][0] > 0.1 && k<1) {
-                //With correct units !!!! edinst/hbarc and temp from EOS *habrc!!!!
-                cout<<(*m_xyt)[i][j][k][0]<<" "<<(*m_xyt)[i][j][k][1]<<" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0]/Util::hbarc, 0)*Util::hbarc<<endl;
-                //cout<<Util::hbarc<<endl;
-                //cout<<(*m_xyt)[i][j][k][1]/fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
-              }
+
+              // if ((*m_xyt)[i][j][k][0] > 0.1 && k<1) {
+              //   //With correct units !!!! edinst/hbarc and temp from EOS *habrc!!!!
+              //   //cout<<(*m_xyt)[i][j][k][0]<<" "<<(*m_xyt)[i][j][k][1]<<" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0]/Util::hbarc, 0)*Util::hbarc<<endl;
+              //   cout<<(*m_xyt)[i][j][k][0]<<" "<<(*m_xyt)[i][j][k][1]<<" via EOS = "<<GetTemperatureFromEos((*m_xyt)[i][j][k][0])<<endl;
+              //   //cout<<Util::hbarc<<endl;
+              //   //cout<<(*m_xyt)[i][j][k][1]/fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
+              // }
+
           }
+}
+
+double FnoRooIn::GetTemperatureFromEos(double ed) {
+    return fnoEOS->get_temperature(ed/Util::hbarc, 0)*Util::hbarc;
 }
 
 /*
