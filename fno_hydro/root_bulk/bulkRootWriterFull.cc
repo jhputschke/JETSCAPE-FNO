@@ -205,6 +205,9 @@ void BulkRootWriter::Init() {
 
     f=new TFile(oName.c_str(),"RECREATE");
     t=new TTree("t","Tree");
+
+    JSINFO<<"BulkRootWriter: Output file = "<<oName;
+    JSINFO<<"BulkRootWriter: # of features = "<<nFeatures;
 }
 
 BulkRootWriter::~BulkRootWriter() {
@@ -216,7 +219,7 @@ BulkRootWriter::~BulkRootWriter() {
 void BulkRootWriter::InitBranch(int nX, int nY, int nT)
 {
     JSINFO<<"InitBranch Custom Resolution (x,y) all tau    : "<<nX<<" "<<nY;//<<" "<<nT;
-    JSINFO<<"# of features:"<<nFeatures;
+    JSINFO<<"# of features = "<<nFeatures;
     initBranch = true;
 
     //REMARK: Maybe better two trees than two branches, could be easier to load only one tree via uproot than a single branch !????
