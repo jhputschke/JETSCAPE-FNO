@@ -108,6 +108,7 @@ class BulkRootWriter : public JetScapeModuleBase
     //
     //std::vector<std::vector<std::vector<double>>> m_xyt;
     //std::vector<std::vector<std::vector<double>>> m_xyt2;
+
     //std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt;
     //std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt2;
 
@@ -244,21 +245,22 @@ void BulkRootWriter::Exec() {
     double xMax = bInfo.XMax(); //same for y axis ...
     double tauMax = bInfo.TauMax();
 
-    //DBEUG:
-    cout<<nT<<" "<<tauMax<<endl;
-
     double dX = bInfo.dx;
     double dTau = bInfo.dtau;
 
-    double m_TauMax = 5.0; //in fermi ..
+    //double m_TauMax = 5.0; //in fermi ..
     double m_dTau = 0.1; //in fermi ...
-    int m_nT = m_TauMax/m_dTau;
+    int m_nT = (tauMax-tau0)/m_dTau+1;
+
+    //DBEUG:
+    //cout<<nT<<" "<<tauMax<<" "<<m_nT<<" "<<m_nT*m_dTau+tau0<<endl;
 
     double m_dX = 0.5;
     int m_nX = (xMax-xMin+dX)/m_dX;
     int m_nY = m_nX;
 
     if (!initBranch) {
+
         JSINFO<<"InitBrach: tau0 = "<<tau0;
         JSINFO<<"InitBranch Hydro Sim Resolution (x,y) all tau : "<<bInfo.nx<<" "<<bInfo.ny;
 
@@ -295,6 +297,7 @@ void BulkRootWriter::Exec() {
                 //m_xyt2[i][j][k][1] = (float) (mCell.temperature);
                 m_xyt2[i][j][k][1] = (float) (mCell.vx);
                 m_xyt2[i][j][k][2] = (float) (mCell.vy);
+
                 // 2+1D vz = 0  ...
                 //m_xyt2[i][j][k][4] = (mCell.vz);
                 //cout<<mCell.vx<<" "<<mCell.vy<<" "<<mCell.vz<<endl;
@@ -307,11 +310,10 @@ void BulkRootWriter::Exec() {
    */
 
     // -------------------------------------
-    //
-    // -------------------------------------
-    // User Hydro evolution resolution ...
 
-    //m_xyt=std::vector<std::vector<std::vector<std::vector<double>>>> (nX, std::vector<std::vector<std::vector<double>>>(nY, std::vector<std::vector<double>>(nT)));
+    // -------------------------------------
+    // User Hydro evolution resolution full time evolution ...
+
     m_xyt = std::vector<std::vector<std::vector<std::vector<float>>>>(
             m_nX,
             std::vector<std::vector<std::vector<float>>>(
@@ -338,11 +340,14 @@ void BulkRootWriter::Exec() {
                 //m_xyt[i][j][k][1] = (float) (mCell.temperature); //temperature; //energy_density
                 m_xyt[i][j][k][1] = (float) (mCell.vx);
                 m_xyt[i][j][k][2] = (float) (mCell.vy);
+
+                //----------------------------------
                 //m_xyt[i][j][k][1] = (mCell.vz);
                  // 2+1D vz = 0  ...
                  //if ((m_xyt)[i][j][k][0] > 0.1 && k<1) {
                    //cout<<(m_xyt)[i][j][k][0]<<" "<<(m_xyt)[i][j][k][1]<<endl;//" via EOS = "<<fnoEOS->get_temperature((*m_xyt)[i][j][k][0], 0)<<endl;
                    // }
+                 //----------------------------------
             }
         }
     }
@@ -351,6 +356,7 @@ void BulkRootWriter::Exec() {
 
     t->Fill();
     //t->Print();
+
     //REMARK: Check for memory leaks --> does not look like there is one !!!!
     m_xyt2.clear(); //maybe better resize it above ...
     m_xyt.clear(); //maybe better resize it above ...
