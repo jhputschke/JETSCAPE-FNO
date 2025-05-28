@@ -104,7 +104,8 @@ class BulkRootWriter : public JetScapeModuleBase
     bool initBranch;
     int nFeatures;
 
-    // REMARK: Check with float precision ...
+    // REMARK: Check with float precision ... seems fine wrt to check Python notebook ... but to be verified !!!!
+    //
     //std::vector<std::vector<std::vector<double>>> m_xyt;
     //std::vector<std::vector<std::vector<double>>> m_xyt2;
     //std::vector<std::vector<std::vector<std::vector<double>>>> m_xyt;
@@ -162,8 +163,7 @@ int main(int argc, char** argv)
 
     // -------------------------------------
 
-    //auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root");
-    auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_test.root");
+    auto bulkWriter =  make_shared<BulkRootWriter>("bulk_root_writer_full_test.root");
     jetscape->Add(bulkWriter);
 
     //auto writer= make_shared<JetScapeWriterAscii> ("test_out.dat");
@@ -218,17 +218,6 @@ void BulkRootWriter::InitBranch(int nX, int nY, int nT)
     JSINFO<<"# of features:"<<nFeatures;
     initBranch = true;
 
-    //m_xyt=std::vector<std::vector<std::vector<std::vector<double>>>> (nX, std::vector<std::vector<std::vector<double>>>(nY, std::vector<std::vector<double>>(nT)));
-    m_xyt = std::vector<std::vector<std::vector<std::vector<float>>>>(
-            nX,
-            std::vector<std::vector<std::vector<float>>>(
-                nY,
-                std::vector<std::vector<float>>(
-                    nT,
-                    std::vector<float>(nFeatures)
-                )
-            )
-        );
     //REMARK: Maybe better two trees than two branches, could be easier to load only one tree via uproot than a single branch !????
     t->Branch("user_res",&m_xyt);
     t->Branch("hydro_res",&m_xyt2);
@@ -242,20 +231,6 @@ void BulkRootWriter::Exec() {
   auto hydro = JetScapeSignalManager::Instance()->GetHydroPointer();
   if (hydro.lock()) {
     auto bInfo = hydro.lock()->get_bulk_info();
-
-    // REMARK: Think about how to best store the hydro grid and other grid info in tree etc ...
-    /*
-    cout<<bInfo.get_data_size()<<" "<<bInfo.is_boost_invariant()<<endl;
-    cout<<"Grid Info : "<<bInfo.ntau<<" "<<bInfo.nx<<" "<<bInfo.ny<<" "<<bInfo.neta<<endl;
-    cout<<bInfo.tau_min<<" "<<bInfo.Tau0()<<" "<<bInfo.XMin()<<" "<<bInfo.YMin()<<" "<<bInfo.EtaMin()<<endl;
-    cout<<bInfo.TauMax()<<" "<<bInfo.XMax()<<" "<<bInfo.YMax()<<" "<<bInfo.EtaMax()<<endl;
-    cout<<bInfo.dtau<<" "<<bInfo.dx<<" "<<bInfo.dy<<" "<<bInfo.deta<<endl;
-    cout<<bInfo.GetIdTau(0.6)<<" "<<bInfo.GetIdTau(10.)<<" "<<bInfo.GetIdTau(100.)<<endl;
-    auto fCell = bInfo.GetAtTimeStep(bInfo.GetIdTau(0.6),0,0,0);
-    cout<<fCell.temperature<<endl;
-    fCell = bInfo.GetAtTimeStep(bInfo.GetIdTau(5.),0,0,0);
-    cout<<fCell.temperature<<endl;
-    */
 
     // REMARK: Maybe more effcient ...
 
@@ -336,6 +311,18 @@ void BulkRootWriter::Exec() {
     // -------------------------------------
     // User Hydro evolution resolution ...
 
+    //m_xyt=std::vector<std::vector<std::vector<std::vector<double>>>> (nX, std::vector<std::vector<std::vector<double>>>(nY, std::vector<std::vector<double>>(nT)));
+    m_xyt = std::vector<std::vector<std::vector<std::vector<float>>>>(
+            m_nX,
+            std::vector<std::vector<std::vector<float>>>(
+                m_nY,
+                std::vector<std::vector<float>>(
+                    m_nT,
+                    std::vector<float>(nFeatures)
+                )
+            )
+        );
+
     for (int k=0; k<(m_nT); k++){
         for (int i=0; i<(m_nX); i++){
             for (int j=-0; j<(m_nY); j++){
@@ -366,6 +353,8 @@ void BulkRootWriter::Exec() {
     //t->Print();
     //REMARK: Check for memory leaks --> does not look like there is one !!!!
     m_xyt2.clear(); //maybe better resize it above ...
+    m_xyt.clear(); //maybe better resize it above ...
+
   }
   else {JSWARN<<"No hydro pointer available ...";}
 }

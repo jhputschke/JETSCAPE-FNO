@@ -330,13 +330,15 @@ void FnoHydro::EvolveHydro() {
 
         int preq_glob_index = GetPreqCellIndex(GetPreqIdX(x_In),GetPreqIdY(y_In));
         double ed = pre_eq_ptr->e_[preq_glob_index];
-        double T = GetTemperatureFromEos(ed);
 
         //h2dIS_rebin->Fill(i,j,ed);
 
         //for (int k=0;k<50;k++) {
         int k=0;
         if (n_features == 4 ) {
+
+            double T = GetTemperatureFromEos(ed);
+
             fno_input_tensor[0][i][j][k] = ed;
             fno_input_tensor[1][i][j][k] = T;
             // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....

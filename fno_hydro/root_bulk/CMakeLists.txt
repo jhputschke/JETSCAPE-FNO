@@ -40,4 +40,11 @@ target_include_directories(bulkRootWriter PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # Then generate dictionaries and add them as a dependency of the executable (via the MODULE parameter):
 ROOT_GENERATE_DICTIONARY(bulkRootWriter_dict MODULE bulkRootWriter LINKDEF JetScapeRootBulkLinkDef.h)
 
+add_executable(bulkRootWriterFull ./bulkRootWriterFull.cc)
+target_link_libraries(bulkRootWriterFull JetScape ${ROOT_LIBRARIES})
+#Attach dictionaries to the executable. First, tell it where to look for headers required by the dictionaries:
+target_include_directories(bulkRootWriterFull PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Then generate dictionaries and add them as a dependency of the executable (via the MODULE parameter):
+ROOT_GENERATE_DICTIONARY(bulkRootWriterFull_dict MODULE bulkRootWriterFull LINKDEF JetScapeRootBulkLinkDef.h)
+
 #Have to ln -s src/lib/libbulkTest_rdict.pcm . otherwise error, change location or create a real library ....
