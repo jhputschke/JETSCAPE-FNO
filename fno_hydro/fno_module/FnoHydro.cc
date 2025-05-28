@@ -48,40 +48,6 @@ RegisterJetScapeModule<FnoHydro> FnoHydro::reg("FnoHydro");
 
 //****************************************************************************************
 
-//REMARK: FOr now maybe not yet, just take the value from finer grid ... !!!!!
-//void GetPreqInterpolation(Jetscape::real x, Jetscape::real y) {
-  //int id_x = GetIdX(x);
-  //int id_y = GetIdY(y);
-
-  /*
-  auto c000 = GetFluidCell(id_tau, id_x, id_y, id_eta);
-  auto c001 = GetFluidCell(id_tau, id_x, id_y, id_eta + 1);
-  auto c010 = GetFluidCell(id_tau, id_x, id_y + 1, id_eta);
-  auto c011 = GetFluidCell(id_tau, id_x, id_y + 1, id_eta + 1);
-  auto c100 = GetFluidCell(id_tau, id_x + 1, id_y, id_eta);
-  auto c101 = GetFluidCell(id_tau, id_x + 1, id_y, id_eta + 1);
-  auto c110 = GetFluidCell(id_tau, id_x + 1, id_y + 1, id_eta);
-  auto c111 = GetFluidCell(id_tau, id_x + 1, id_y + 1, id_eta + 1);
-  real x0 = XCoord(id_x);
-  real x1 = XCoord(id_x + 1);
-  real y0 = YCoord(id_y);
-  real y1 = YCoord(id_y + 1);
-  */
-
-  //return TrilinearInt(x0, x1, y0, y1, eta0, eta1, c000, c001, c010, c011, c100,
-  //                    c101, c110, c111, x, y, eta);
-//}
-
-const double mNc = 3;
-const double mNf = 3;
-
-double get_temperature_ideal_EOS(double eps, double rhob = 0) {
-    return pow(
-        90.0 / M_PI / M_PI * (eps / 3.0)
-            / (2 * (mNc * mNc - 1) + 7. / 2 * mNc * mNf),
-        .25);
-}
-
 // Get from actual grid ...
 // Think about resizing etc maybe use same interpoolation as for fluid cells !???
 // put in class and read in from preq module ...
@@ -364,7 +330,7 @@ void FnoHydro::EvolveHydro() {
 
         int preq_glob_index = GetPreqCellIndex(GetPreqIdX(x_In),GetPreqIdY(y_In));
         double ed = pre_eq_ptr->e_[preq_glob_index];
-        double T = GetTemperatureFromEos((ed);
+        double T = GetTemperatureFromEos(ed);
 
         //h2dIS_rebin->Fill(i,j,ed);
 
@@ -379,6 +345,7 @@ void FnoHydro::EvolveHydro() {
         }
         else if (n_features == 3) {
             fno_input_tensor[0][i][j][k] = ed;
+            // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
             fno_input_tensor[1][i][j][k] = 0;
             fno_input_tensor[2][i][j][k] = 0;
         }
