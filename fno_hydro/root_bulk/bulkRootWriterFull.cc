@@ -114,6 +114,9 @@ class BulkRootWriter : public JetScapeModuleBase
 
     std::vector<std::vector<std::vector<std::vector<float>>>> m_xyt;
     std::vector<std::vector<std::vector<std::vector<float>>>> m_xyt2;
+    std::vector<std::vector<float>> m_foSurf;
+    std::vector<float> m_foEdT;
+
 };
 
 // -------------------------------------
@@ -225,6 +228,8 @@ void BulkRootWriter::InitBranch(int nX, int nY, int nT)
     //REMARK: Maybe better two trees than two branches, could be easier to load only one tree via uproot than a single branch !????
     t->Branch("user_res",&m_xyt);
     t->Branch("hydro_res",&m_xyt2);
+    t->Branch("foSurf",&m_foSurf);
+    t->Branch("foEdT",&m_foEdT);
 }
 
 // -------------------------------------
@@ -361,18 +366,54 @@ void BulkRootWriter::Exec() {
     //
     // ==> minimum info for further usage in case of ideal hydro for now ... Follow up !!!!
     //
-    /*
+
     std::vector<SurfaceCellInfo> m_surfaceCellVector;
     hydro.lock()->getSurfaceCellVector(m_surfaceCellVector);
 
+    int nSurfCells = m_surfaceCellVector.size();
+
+    //cout<<nSurfCells<<endl;
+
+    // save ed and T per event as backup ...
+    // hardcoded for now: tau, x, y, d3sigma_mu[0], d3sigma_mu[1], d3sigma_mu[2], umu[0], umu[1], umu[2],
+    m_foSurf = std::vector<std::vector<float>>(
+        nSurfCells,
+        std::vector<float>(9)
+    );
+
+    m_foEdT = std::vector<float>(2);
+    m_foEdT[0] = m_surfaceCellVector[0].energy_density;
+    m_foEdT[1] = m_surfaceCellVector[0].temperature;
+
+    for (int i=0; i<nSurfCells; i++){
+        m_foSurf[i][0] = (float) m_surfaceCellVector[i].tau;
+        m_foSurf[i][1] = (float) m_surfaceCellVector[i].x;
+        m_foSurf[i][2] = (float) m_surfaceCellVector[i].y;
+        m_foSurf[i][3] = (float) m_surfaceCellVector[i].d3sigma_mu[0];
+        m_foSurf[i][4] = (float) m_surfaceCellVector[i].d3sigma_mu[1];
+        m_foSurf[i][5] = (float) m_surfaceCellVector[i].d3sigma_mu[2];
+        m_foSurf[i][6] = (float) m_surfaceCellVector[i].umu[0];
+        m_foSurf[i][7] = (float) m_surfaceCellVector[i].umu[1];
+        m_foSurf[i][8] = (float) m_surfaceCellVector[i].umu[2];
+    }
+
     //DEBUG: ...
+    // REMARK: for ideal 2+1 hydro: pi[] = 0 , eta = 0, cell.d3sigma_mu[3] = 0 and cell.umu[3] = 0
+    // Also: energy_density and temperature given by freezout temp is the same for all cells!!!
+    //
+    /*
     for (auto& cell : m_surfaceCellVector) {
+
+
         // Process each cell in the surface vector
         //if (cell.eta>0) cout<<"AAAhhhh ...."<<endl;
-        cout<<cell.tau<<" "<<cell.x<<" "<<cell.y<<" "<<cell.eta<<" "<<cell.energy_density<<" "<<cell.temperature<<" "<<cell.pressure<<" "<<endl;
+        cout<<cell.tau<<" "<<cell.x<<" "<<cell.y<<" "<<cell.eta<<" "<<cell.energy_density<<" "<<cell.temperature<<" "<<cell.pressure<<" "<<cell.entropy_density<<" "<<cell.baryon_density<<endl;
         cout<<" "<<cell.d3sigma_mu[0]<<" "<<cell.d3sigma_mu[1]<<" "<<cell.d3sigma_mu[2]<<" "<<cell.d3sigma_mu[3]<<" "<<endl;
+        cout<<cell.umu[0]<<" "<<cell.umu[1]<<" "<<cell.umu[2]<<" "<<cell.umu[3]<<" "<<endl;
+        cout<<cell.mu_B<<" "<<cell.mu_Q<<" "<<cell.mu_S<<" "<<cell.bulk_Pi<<" "<<endl;
+        cout<<cell.pi[0]<<" "<<cell.pi[1]<<" "<<cell.pi[2]<<" "<<cell.pi[3]<<" "<<endl;
     }
-    */
+    //*/
     // -------------------------------------
 
     t->Fill();
@@ -381,6 +422,8 @@ void BulkRootWriter::Exec() {
     //REMARK: Check for memory leaks --> does not look like there is one !!!!
     m_xyt2.clear(); //maybe better resize it above ...
     m_xyt.clear(); //maybe better resize it above ...
+    m_foSurf.clear();
+    m_foEdT.clear();
 
   }
   else {JSWARN<<"No hydro pointer available ...";}
