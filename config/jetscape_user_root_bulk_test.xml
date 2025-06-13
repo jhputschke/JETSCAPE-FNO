@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 1 </nEvents>
+  <nEvents> 10 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -56,23 +56,23 @@
       </Trento>
   </IS>
 
-  <!-- Hard Process
-   <Hard>
+  <!-- Hard Process  -->
+  <Hard>
      <PythiaGun>
        <pTHatMin>20</pTHatMin>
        <pTHatMax>21</pTHatMax>
        <eCM>200</eCM>
      </PythiaGun>
-   </Hard> -->
+   </Hard>
 
    <!-- Parton Gun test with fixed pT and fixed IS pos = 0  -->
-   <Hard>
+   <!-- <Hard>
     <PGun>
         <name>PGun</name>
         <pT>20</pT>
         <parID>21</parID>
     </PGun>
-   </Hard>
+   </Hard> -->
 
   <!--Preequilibrium Dynamics Module -->
   <Preequilibrium>
@@ -121,45 +121,47 @@
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
          <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
-        <n_features>4</n_features>
+        <n_features>3</n_features>
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>
-        <ntau>50</ntau>
+        <ntau>49</ntau>
         <x_min>-15.0</x_min>
         <y_min>-15.0</y_min>
          <!-- <dx>0.5</dx>
         <dy>0.5</dy> -->
         <dtau>0.1</dtau>
         <deta>0</deta>
-        <neta>1</neta>
 
       </FNO>
 
       <FNOROOIN>
         <model_file
-            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+            >../fno_hydro/models/traced_JS3.7_1k_3feat_fno_model_cpu_49bins.pt</model_file>
+        <!-- <model_file
+            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file> -->
+        <root_file
+            > /Users/du8478/FNO_Hydro_Data/full_cent_0_10_1kev.root</root_file>
         <!-- <root_file
             >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file> -->
-        <root_file>bulk_writer_test_new_float.root</root_file>
+        <!-- <root_file>bulk_root_writer_full_test_5ev.root</root_file> -->
 
         <fullHydroIn> 1 </fullHydroIn>
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
          <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
-        <n_features>4</n_features>
+        <n_features>3</n_features>
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>
-        <ntau>50</ntau>
+        <ntau>49</ntau>
         <x_min>-15.0</x_min>
         <y_min>-15.0</y_min>
          <!-- <dx>0.5</dx>
         <dy>0.5</dy> -->
         <dtau>0.1</dtau>
         <deta>0</deta>
-        <neta>1</neta>
 
       </FNOROOIN>
 
@@ -167,7 +169,7 @@
 
   <!--Eloss Modules -->
     <Eloss>
-        <maxT>10</maxT>
+        <maxT>100</maxT>
       <Matter>
           <!-- if not using lbt, use Q0=1; if using lbt use 2 -->
         <Q0> 2.0 </Q0>

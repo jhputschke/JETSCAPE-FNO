@@ -128,7 +128,8 @@ int main(int argc, char** argv)
       vector<fjcore::PseudoJet> hjets = fjcore::sorted_by_pt(hcs.inclusive_jets(2));
       //cout<<"AT HADRONIC LEVEL " << endl;
       for (int k=0;k<hjets.size();k++) {
-          //cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;
+          if (k>0) break;
+          cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;
           hPt->Fill(hjets[k].pt());
           hM->Fill(hjets[k].m());
       }

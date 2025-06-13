@@ -593,7 +593,7 @@ void FnoHydro::PassHydroEvolutionHistoryToFramework() {
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  int number_of_cells = output.numel()/4.; //music_hydro_ptr->get_number_of_fluid_cells();
+  int number_of_cells = output.numel()/(double) n_features;  //music_hydro_ptr->get_number_of_fluid_cells();
   JSINFO << "total number of FNO prediction hydro fluid cells: " << number_of_cells;
 
   //REMRAK: This works and results in correct bulk history filling ... !!!!
@@ -735,8 +735,8 @@ void FnoHydro::PassHydroSurfaceToFramework() {
 }
 */
 
-double FnoHydro::GetTemperatureFromEos(double ed) {
-    return fnoEOS->get_temperature(ed/Util::hbarc, 0)*Util::hbarc;
+float FnoHydro::GetTemperatureFromEos(float ed) {
+    return fnoEOS->get_temperature((float) ed/Util::hbarc, 0)*Util::hbarc;
 }
 
 void FnoHydro::GetHydroInfo(

@@ -43,6 +43,36 @@ RegisterJetScapeModule<FnoRooIn> FnoRooIn::reg("FnoRooIn");
 
 //****************************************************************************************
 
+void save_tensor_legacy_pickle(const torch::Tensor& tensor, const std::string& filename) {
+    std::cout << "\n=== Saving tensor with legacy pickle format ===" << std::endl;
+    try {
+        // For LibTorch, we need to use the older serialization format
+        // This is equivalent to _use_new_zipfile_serialization=False in Python
+
+        // Convert tensor to CPU for compatibility
+        torch::Tensor cpu_tensor = tensor.to(torch::kCPU);
+
+        // Use torch::pickle_save for legacy format
+        std::vector<char> buffer = torch::pickle_save(cpu_tensor);
+
+        // Write to file
+        std::ofstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open file for writing: " + filename);
+        }
+
+        file.write(buffer.data(), buffer.size());
+        file.close();
+
+        std::cout << "Tensor saved with legacy pickle format to: " << filename << std::endl;
+        std::cout << "File size: " << buffer.size() << " bytes" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error saving tensor with legacy format: " << e.what() << std::endl;
+    }
+}
+//****************************************************************************************
+
 FnoRooIn::FnoRooIn() : device({}) {
   hydro_status = NOT_START;
   freezeout_temperature = 0.0;
@@ -94,6 +124,7 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
     // For testing now, overwrites the env settings ...
     torch::set_num_threads(1);
     JSINFO << "Number of threads (libtorch OMP): " << torch::get_num_threads();
+    //device = torch::Device(torch::kMPS);
     JSINFO << "Default device: " << device; // << std::endl;
 
     try {
@@ -106,7 +137,8 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
     string input_model_file = GetXMLElementText({"Hydro", "FNOROOIN", "model_file"});
     JSINFO<<"Loading the traced Pytorch model : "<<input_model_file.c_str();//<<endl;
     module = torch::jit::load(input_model_file.c_str()); //, device);
-    //module = torch::jit::no_grad(module); //freez    //module.to(device);
+    //module = torch::jit::no_grad(module); //freez    //
+    module.to(device);
     }
     catch (const c10::Error& e) {
     JSWARN << "error loading the model :-( ...\n";
@@ -159,6 +191,9 @@ void FnoRooIn::EvolveHydro() {
 
   auto start = std::chrono::high_resolution_clock::now();
 
+  //**************************************************************
+  //REMARK: Read in somehow from XML ...
+  //**************************************************************
   bulk_info.tau_min = 0.5; //pre_eq_ptr->GetPreequilibriumStartTime();
   JSINFO << "Use preEq evo: tau_0 = " << bulk_info.tau_min<< " fm/c.";
 
@@ -188,7 +223,9 @@ void FnoRooIn::EvolveHydro() {
     JSINFO << tensorShapeInput.c_str();
 
     int ntau_fno_loop = 1;
-    if (fullHydroIn) {ntau_fno_loop = ntau_fno;}
+    //if (fullHydroIn) {ntau_fno_loop = ntau_fno;}
+    //cout<<ntau_fno_loop<<endl;
+    cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
 
     for (int i=0;i<nx_fno;i++)
         for (int j=0;j<ny_fno;j++) {
@@ -204,7 +241,10 @@ void FnoRooIn::EvolveHydro() {
                     fno_input_tensor[3][i][j][k] = 0;
                 }
                 else if (n_features == 3) {
-                    fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0];
+                    // if (i==30 and j==30) {
+                    //     cout<< "IS : " << (*m_xyt)[i][j][k][0] << " "<< (*m_xyt)[i][j][k][0]*bulk_info.Tau0() << " " <<GetTemperatureFromEos( (*m_xyt)[i][j][k][0])<<endl;
+                    // }
+                    fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0]*bulk_info.Tau0();
                     // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
                     fno_input_tensor[1][i][j][k] = 0;
                     fno_input_tensor[2][i][j][k] = 0;
@@ -214,6 +254,18 @@ void FnoRooIn::EvolveHydro() {
         }
 
     fno_input_tensor = fno_input_tensor.repeat({1, 1, 1, ntau_fno});
+
+    tensorShapeInput = "Input Tensor shape for FNO model with " + std::to_string(ntau_fno) + " copies of IS : ";
+    shape = fno_input_tensor.sizes();
+    //cout<< "Tensor shape: ";
+        for (int i = 0; i < shape.size(); ++i) {
+        //std::cout << shape[i] << " ";
+        tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
+        }
+    //std::cout<< tensorShapeInput.c_str() << std::endl;
+    JSINFO << tensorShapeInput.c_str();
+
+    //save_tensor_legacy_pickle(fno_input_tensor.clone(), "fno_input_tensor.pt");
 
     hydro_status = INITIALIZED;
 
@@ -230,8 +282,16 @@ void FnoRooIn::EvolveHydro() {
         //torch::NoGradGuard no_grad;
         output = module.forward(inputs).toTensor();
 
+        torch::Tensor first_ntau_steps = fno_input_tensor.slice(3, 0, 1).unsqueeze(0);
+
+        // This creates a tensor with shape [n_features, nx_fno, ny_fno, ntau_fno]
+        //std::cout << "Original tensor shape: " << fno_input_tensor.sizes() << std::endl;
+        //std::cout << "Selected first " << ntau_fno << " steps shape: " << first_ntau_steps.sizes() << std::endl;
+
+        output = torch::cat({first_ntau_steps, output}, 4);
+
         shape = output.sizes();
-        tensorShapeInput = "Output Tensor shape from FNO : ";
+        tensorShapeInput = "Output Tensor shape from FNO with IS at Tau0 : ";
         //c10::IntArrayRef shape = fno_input_tensor.sizes();
         //cout<< "Tensor shape: ";
         for (int i = 0; i < shape.size(); ++i) {
@@ -241,8 +301,12 @@ void FnoRooIn::EvolveHydro() {
         JSINFO << tensorShapeInput.c_str();
 
         for(auto t : inputs)
-        t.toTensor().reset();
+            t.toTensor().reset();
         inputs.clear();
+
+        //save_tensor_legacy_pickle(output, "fno_output_tensor.pt");
+
+        fno_input_tensor.reset(); //maybe redundant ...
 
         hydro_status = FINISHED;
     }
@@ -257,13 +321,16 @@ void FnoRooIn::EvolveHydro() {
   SetHydroGridInfo();
 
   //Grifd info for bulk history ...
-  cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
-  cout<<bulk_info.XMin()<<" "<<bulk_info.XMax()<<" "<<bulk_info.nx<<" "<<bulk_info.dx<<endl;
-  cout<<bulk_info.YMin()<<" "<<bulk_info.YMax()<<" "<<bulk_info.ny<<" "<<bulk_info.dy<<endl;
+  //  inline Jetscape::real TauMax() const { return (tau_min + (ntau - 1) * dtau); } !??? Why -1 !???
+  //cout<<bulk_info.Tau0()<<" "<<bulk_info.TauMax()<<" "<<bulk_info.ntau<<" "<<bulk_info.dtau<<endl;
+  //cout<<bulk_info.XMin()<<" "<<bulk_info.XMax()<<" "<<bulk_info.nx<<" "<<bulk_info.dx<<endl;
+  //cout<<bulk_info.YMin()<<" "<<bulk_info.YMax()<<" "<<bulk_info.ny<<" "<<bulk_info.dy<<endl;
 
   start = std::chrono::high_resolution_clock::now();
 
   if (fullHydroIn) {
+   //bulk_info.ntau = (*m_xyt)[0][0].size();
+    cout<<bulk_info.ntau<<endl;
     PassHydroEvolutionHistoryToFrameworkFromRoot();
   } else {
     PassHydroEvolutionHistoryToFramework();
@@ -278,19 +345,19 @@ void FnoRooIn::EvolveHydro() {
              << bulk_info.data.size();
 
   // DEBUG QA ...
-  /*
-  TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
+  // ///*
+  // TH2D *h2dIS_rebin_torch_pred_bulkhist = new TH2D("h2dIS_rebin_torch_pred_bulkhist", "", 60, 0, 60, 60, 0, 60);
 
-  for (int i=0;i<nx_fno;i++)
-    for (int j=0;j<ny_fno;j++)
-    {
-        h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(40,i,j,0)].energy_density);
-    }
-  */
-  //TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
-  //h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
-  //h2dIS_root->Draw("colz");
-  //c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
+  // for (int i=0;i<nx_fno;i++)
+  //   for (int j=0;j<ny_fno;j++)
+  //   {
+  //       h2dIS_rebin_torch_pred_bulkhist->Fill(i,j,bulk_info.data[bulk_info.CellIndex(45,i,j,0)].energy_density);
+  //   }
+  // //*/
+  // TCanvas *c3 = new TCanvas("c3", "Canvas", 800, 600);
+  // h2dIS_rebin_torch_pred_bulkhist->Draw("colz");
+  // //h2dIS_root->Draw("colz");
+  // c3->SaveAs("h2dIS_rebin_root_bulkhist.gif");
 
   output.reset();
   m_xyt->clear();
@@ -347,12 +414,88 @@ void FnoRooIn::SetHydroGridInfo() {
 // of the bulk history --> check with filling via loops !!! and ouput histogram !!!
 // ==> looks like this falattening is not the same as the global index !!!
 // Check with moving time axis to front and then flatten !!!
+// With accesors from PyTorch flattend or loops same performance !!!!
 // *****************************************************************************************
 
 void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
   JSINFO << "Passing hydro evolution information to JETSCAPE ... ";
 
-  int number_of_cells = output.numel()/4.; //music_hydro_ptr->get_number_of_fluid_cells();
+  int number_of_cells = output.numel()/(double) n_features; //music_hydro_ptr->get_number_of_fluid_cells();
+  JSINFO << "total number of FNO prediction hydro fluid cells: " << number_of_cells;
+
+  //Works too after permute .. and quicker than loops ... !!!!
+  torch::Tensor flattened_tensor = torch::squeeze(output, 0);
+  string tensorShapeInput = "Squeezed Tesnor shape from FNO : ";
+  c10::IntArrayRef shape = flattened_tensor.sizes();
+  //cout<< "Tensor shape: ";
+  for (int i = 0; i < shape.size(); ++i) {
+      //std::cout << shape[i] << " ";
+      tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
+    }
+  //std::cout<< tensorShapeInput.c_str() << std::endl;
+  JSINFO << tensorShapeInput.c_str();
+
+  //Tremendous speed up !!!
+  auto accessor = flattened_tensor.accessor<float, 4>();
+
+  for (int k=0;k<bulk_info.ntau+1;k++)
+    for (int i=0;i<bulk_info.nx;i++)
+        for (int j=0;j<bulk_info.ny;j++)
+        {
+            std::unique_ptr<FluidCellInfo> fluid_cell_info_ptr(new FluidCellInfo);
+            if (n_features == 4 ) {
+                fluid_cell_info_ptr->energy_density = accessor[0][i][j][k]; // flattened_tensor[0][i].item<double>();
+                fluid_cell_info_ptr->temperature = accessor[1][i][j][k]; //flattened_tensor[1][i].item<double>();
+                fluid_cell_info_ptr->vx = accessor[2][i][j][k]; //flattened_tensor[2][i].item<double>();
+                fluid_cell_info_ptr->vy = accessor[3][i][j][k]; //flattened_tensor[3][i].item<double>();
+            }
+            else if (n_features == 3) {
+                float eNormInverse = accessor[0][i][j][k]/(bulk_info.Tau0()+bulk_info.dtau*k);
+
+                //DEBUG:
+                //if (i==30 and j==30) {
+                //    cout<< eNormInverse << " "<< accessor[0][i][j][k] << " "<<bulk_info.Tau0()+bulk_info.dtau*k<< " "<<k<<" "<<GetTemperatureFromEos(eNormInverse)<<endl;
+                //    cout<<  (*m_xyt)[i][j][k][0] << " "<<bulk_info.Tau0()+bulk_info.dtau*k<< " "<<k<<" "<<GetTemperatureFromEos( (*m_xyt)[i][j][k][0])<<endl;
+                //}
+
+                fluid_cell_info_ptr->energy_density = eNormInverse; // flattened_tensor[0][i].item<double>();
+                fluid_cell_info_ptr->temperature = GetTemperatureFromEos(eNormInverse); //flattened_tensor[1][i].item<double>();
+                fluid_cell_info_ptr->vx = accessor[1][i][j][k]; //flattened_tensor[2][i].item<double>();
+                fluid_cell_info_ptr->vy = accessor[2][i][j][k];
+
+                //DEBUG:
+                // if (i==30 and j==30) {
+                //      cout<<  std::setprecision(1) << bulk_info.Tau0()+bulk_info.dtau*k << " " << std::setprecision(5) << fluid_cell_info_ptr->energy_density << " "<<fluid_cell_info_ptr->temperature <<endl;
+                //      cout<<  std::setprecision(1) << bulk_info.Tau0()+bulk_info.dtau*k << " " << std::setprecision(5) <<(*m_xyt)[i][j][k][0] << GetTemperatureFromEos( (float) (*m_xyt)[i][j][k][0]) <<endl;
+                // }
+            }
+            else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
+
+            fluid_cell_info_ptr->vz = 0.0 ;//fluidCell_ptr->vz;
+            fluid_cell_info_ptr->entropy_density = 0.0; //fluidCell_ptr->sd;
+            fluid_cell_info_ptr->pressure = 0.0; //fluidCell_ptr->pressure;
+            fluid_cell_info_ptr->mu_B = 0.0;
+            fluid_cell_info_ptr->mu_C = 0.0;
+            fluid_cell_info_ptr->mu_S = 0.0;
+            fluid_cell_info_ptr->qgp_fraction = 0.0;
+            for (int i = 0; i < 4; i++) {
+              for (int j = 0; j < 4; j++) {
+                fluid_cell_info_ptr->pi[i][j] = 0.0;
+              }
+            }
+            fluid_cell_info_ptr->bulk_Pi = 0.0;
+            //StoreHydroEvolutionHistory(fluid_cell_info_ptr);
+            bulk_info.data.push_back(*fluid_cell_info_ptr);
+          }
+
+  flattened_tensor.reset();
+}
+
+/* // Flattened ...
+void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
+  JSINFO << "Passing hydro evolution information to JETSCAPE ... ";
+
+  int number_of_cells = output.numel()/(double) n_features; //music_hydro_ptr->get_number_of_fluid_cells();
   JSINFO << "total number of FNO prediction hydro fluid cells: " << number_of_cells;
 
   //Works too after permute .. and quicker than loops ... !!!!
@@ -384,7 +527,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
         fluid_cell_info_ptr->vy = accessor[3][i]; //flattened_tensor[3][i].item<double>();
     }
     else if (n_features == 3) {
-        fluid_cell_info_ptr->energy_density = accessor[0][i]; // flattened_tensor[0][i].item<double>();
+        fluid_cell_info_ptr->energy_density = accessor[0][i]; ///(bulk_info.Tau0())+bulk_info.dtau*; // flattened_tensor[0][i].item<double>();
         fluid_cell_info_ptr->temperature = GetTemperatureFromEos(accessor[0][i]); //flattened_tensor[1][i].item<double>();
         fluid_cell_info_ptr->vx = accessor[1][i]; //flattened_tensor[2][i].item<double>();
         fluid_cell_info_ptr->vy = accessor[2][i];
@@ -410,6 +553,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
 
   flattened_tensor.reset();
 }
+*/
 
 // ROOT and st vector significantly faster than torch vector !??? Follow up ...
 void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
@@ -433,9 +577,13 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
               }
               else if (n_features == 3) {
                   fluid_cell_info_ptr->energy_density = (*m_xyt)[i][j][k][0];
-                  fluid_cell_info_ptr->temperature = GetTemperatureFromEos((*m_xyt)[i][j][k][0]);
+                  fluid_cell_info_ptr->temperature = GetTemperatureFromEos((float) (*m_xyt)[i][j][k][0]);
                   fluid_cell_info_ptr->vx =(*m_xyt)[i][j][k][1];
                   fluid_cell_info_ptr->vy =(*m_xyt)[i][j][k][2];
+                  //DEBUG:
+                  //if (i==30 and j==30)
+                  //     cout<< bulk_info.Tau0()+bulk_info.dtau*k << " " <<fluid_cell_info_ptr->energy_density << " "<<fluid_cell_info_ptr->temperature <<endl;
+                  //    cout<<  (*m_xyt)[i][j][k][0] << " "<<bulk_info.Tau0()+bulk_info.dtau*k<< " "<<k<<" "<<GetTemperatureFromEos( (*m_xyt)[i][j][k][0])<<endl;
               }
               else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
 
@@ -456,6 +604,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
               bulk_info.data.push_back(*fluid_cell_info_ptr);
 
               //DEBUG: Check EOS from Music to get temperatyre from edensity and compare to stored temperature from ROOT file ...
+              // See check in bulkWriterFull, exact results!!??? Follow up !!!!!!
 
               // if ((*m_xyt)[i][j][k][0] > 0.1 && k<1) {
               //   //With correct units !!!! edinst/hbarc and temp from EOS *habrc!!!!
@@ -468,8 +617,8 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
           }
 }
 
-double FnoRooIn::GetTemperatureFromEos(double ed) {
-    return fnoEOS->get_temperature(ed/Util::hbarc, 0)*Util::hbarc;
+float FnoRooIn::GetTemperatureFromEos(float ed) {
+    return fnoEOS->get_temperature((float) ed/Util::hbarc, 0)*Util::hbarc;
 }
 
 /*

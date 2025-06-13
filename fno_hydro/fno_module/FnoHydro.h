@@ -61,7 +61,7 @@ private:
   torch::Device device;
 
   std::unique_ptr<EOS> fnoEOS;
-  double GetTemperatureFromEos(double ed);
+  float GetTemperatureFromEos(float ed);
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.

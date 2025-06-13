@@ -96,6 +96,8 @@ class BulkRootWriter : public JetScapeModuleBase
 
   private:
 
+    //std::unique_ptr<EOS> fnoEOS;
+
     string oName;
 
     TFile *f;
@@ -273,6 +275,9 @@ void BulkRootWriter::Exec() {
         JSINFO<<"InitBranch Hydro Sim Resolution (x,y) all tau : "<<bInfo.nx<<" "<<bInfo.ny;
 
         InitBranch(m_nX,m_nY,m_nT);
+
+        //quick and dirty ...
+        //fnoEOS=std::make_unique<EOS>(91);
     }
 
     // -------------------------------------
@@ -348,6 +353,13 @@ void BulkRootWriter::Exec() {
                 //m_xyt[i][j][k][1] = (float) (mCell.temperature); //temperature; //energy_density
                 m_xyt[i][j][k][1] = (float) (mCell.vx);
                 m_xyt[i][j][k][2] = (float) (mCell.vy);
+
+                // **********************************************************************************************************************************
+                // Temp and EOS debug ... ==> identical results (some differences seen after wrting / reading ROOT file !??? precision issues !!???)
+                // **********************************************************************************************************************************
+                // float tempEOS = fnoEOS->get_temperature((float) (mCell.energy_density)/Util::hbarc, 0)*Util::hbarc;
+                // if (i==30 and j==30)
+                //     cout<<tau_In<< " "<<mCell.energy_density << " "<<mCell.temperature<<" "<<tempEOS<<endl;
 
                 //----------------------------------
                 //m_xyt[i][j][k][1] = (mCell.vz);
