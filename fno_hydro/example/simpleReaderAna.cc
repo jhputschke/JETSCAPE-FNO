@@ -119,6 +119,7 @@ int main(int argc, char** argv)
 
 	*/
 
+	if (reader->GetCurrentEvent()>10) break;
     //cout << " Found " << finals << " final state partons." << endl;
 
       auto hadrons = reader->GetHadrons();
@@ -127,6 +128,7 @@ int main(int argc, char** argv)
       fjcore::ClusterSequence hcs(reader->GetHadronsForFastJet(), jet_def);
       vector<fjcore::PseudoJet> hjets = fjcore::sorted_by_pt(hcs.inclusive_jets(2));
       //cout<<"AT HADRONIC LEVEL " << endl;
+      cout<<"Number of Jets is : "<<hjets.size()<<endl;
       for (int k=0;k<hjets.size();k++) {
           if (k>0) break;
           cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;

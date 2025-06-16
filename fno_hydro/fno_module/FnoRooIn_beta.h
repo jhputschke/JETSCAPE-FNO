@@ -13,23 +13,32 @@
  * See COPYING for details.
  ******************************************************************************/
 
-#ifndef FNOHYDRO_H
-#define FNOHYDRO_H
+#ifndef FNOROOIN_H
+#define FNOROOIN_H
 
 #include <memory>
 
 #include "FluidDynamics.h"
 //#include "hydro_source_base.h"
 #include "LiquefierBase.h"
-#include "data_struct.h"
+//#include "data_struct.h" /in iSS ..
 #include "JetScapeConstants.h"
 #include "MakeUniqueHelper.h"
+#include "eos.h"
 
 #include <torch/script.h>
+#include <torch/torch.h>
+
+#include <Riostream.h>
+#include "TFile.h"
+#include "TString.h"
+#include "TROOT.h"
+#include "TSystem.h"
+#include "TTree.h"
 
 using namespace Jetscape;
 
-class FnoHydro : public FluidDynamics {
+class FnoRooIn : public FluidDynamics {
 private:
 
   Jetscape::real freezeout_temperature; //!< [GeV]
@@ -38,29 +47,39 @@ private:
   //bool has_source_terms;
   //std::shared_ptr<HydroSourceJETSCAPE> hydro_source_terms_ptr;
 
-  Jetscape::real x_min_preq, dx_preq;
-  Jetscape::real y_min_preq, dy_preq;
+  Jetscape::real x_min_fno, dx_fno;
+  Jetscape::real y_min_fno, dy_fno;
+  Jetscape::real deta_fno;
+  Jetscape::real dtau_fno;
+  //Jetscape::real z_min_fno, dz_fno;
+  int nx_fno, ny_fno; // nz_fno
+  int ntau_fno;
+  int neta_fno;
+
+  int n_features;
+  bool fullHydroIn;
+
+  TFile *f;
+  TTree *t;
+
+  //std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
+  std::vector<std::vector<std::vector<std::vector<float>>>> *m_xyt;
 
   torch::jit::script::Module module;
   torch::Tensor output;
+  torch::Device device;
+
+  std::unique_ptr<EOS> fnoEOS;
+  float GetTemperatureFromEos(float ed);
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
-  static RegisterJetScapeModule<FnoHydro> reg;
-
-  inline int GetPreqIdX(Jetscape::real x) const {
-    return (static_cast<int>((x - x_min_preq) / dx_preq));
-  }
-
-  inline int GetPreqIdY(Jetscape::real y) const {
-    return (static_cast<int>((y - y_min_preq) / dy_preq));
-  }
-
+  static RegisterJetScapeModule<FnoRooIn> reg;
 
 public:
 
-  FnoHydro();
-  ~FnoHydro();
+  FnoRooIn();
+  ~FnoRooIn();
 
   void InitializeHydro(Parameter parameter_list);
 
@@ -71,9 +90,8 @@ public:
   void GetHydroInfo_JETSCAPE(Jetscape::real t, Jetscape::real x, Jetscape::real y,
                     Jetscape::real z, std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr);
 
-  void SetPreEqGridInfo();
   void SetHydroGridInfo();
-  void PassPreEqEvolutionHistoryToFramework();
+  void PassHydroEvolutionHistoryToFrameworkFromRoot();
   void PassHydroEvolutionHistoryToFramework();
   //void PassHydroSurfaceToFramework();
 
@@ -87,4 +105,4 @@ public:
   //void collect_freeze_out_surface();
 };
 
-#endif // FNOHYDRO_H
+#endif // FNOROOIN_H

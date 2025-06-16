@@ -58,6 +58,12 @@
 
   <!-- Hard Process  -->
   <Hard>
+    <PGun>
+        <name>PGun</name>
+        <pT>20</pT>
+        <parID>21</parID>
+    </PGun>
+
      <PythiaGun>
        <pTHatMin>20</pTHatMin>
        <pTHatMax>21</pTHatMax>
@@ -115,7 +121,7 @@
 
       <FNO>
         <model_file
-            >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file>
+            >../fno_hydro/models/traced_JS3.7_1k_3feat_fno_model_cpu_49bins.pt</model_file>
 
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
@@ -146,7 +152,7 @@
             >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file> -->
         <!-- <root_file>bulk_root_writer_full_test_5ev.root</root_file> -->
 
-        <fullHydroIn> 1 </fullHydroIn>
+        <fullHydroIn> 0 </fullHydroIn>
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>

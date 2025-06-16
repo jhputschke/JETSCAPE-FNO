@@ -98,8 +98,8 @@ int main(int argc, char** argv)
 
     //jetscape->Add(trento);
     //jetscape->Add(null_predynamics);
-    //jetscape->Add(pGun);
-    jetscape->Add(pythiaGun);
+    jetscape->Add(pGun);
+    //jetscape->Add(pythiaGun);
     jetscape->Add(hydro);
 
     // surface sampler
