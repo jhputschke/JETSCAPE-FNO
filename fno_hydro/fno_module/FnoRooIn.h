@@ -65,6 +65,7 @@ private:
 
   //std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
   std::vector<std::vector<std::vector<std::vector<float>>>> *m_xyt;
+  std::vector<std::vector<float>> *m_foSurf;
 
   torch::jit::script::Module module;
   torch::Tensor output;

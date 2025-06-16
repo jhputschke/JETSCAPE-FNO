@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 10 </nEvents>
+  <nEvents> 1 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -128,6 +128,7 @@
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
          <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
         <n_features>3</n_features>
+        <freezeout_temperature>0.136</freezeout_temperature>
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>
@@ -159,6 +160,7 @@
          <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
         <n_features>3</n_features>
         <tau0>0.5</tau0>
+        <freezeout_temperature>0.136</freezeout_temperature>
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>
@@ -173,6 +175,20 @@
       </FNOROOIN>
 
   </Hydro>
+
+  <SoftParticlization>
+     <iSS>
+         <!-- file path for the default input file  -->
+         <iSS_input_file>iSS_parameters.dat</iSS_input_file>
+         <!-- directory path where the hydro surface is stored  -->
+         <iSS_table_path>iSS_tables</iSS_table_path>
+         <!-- file path for the default particle table files  -->
+         <iSS_particle_table_path>iSS_tables</iSS_particle_table_path>
+         <afterburner_type>2</afterburner_type>
+         <number_of_repeated_sampling>1</number_of_repeated_sampling>
+         <Perform_resonance_decays>0</Perform_resonance_decays>
+     </iSS>
+   </SoftParticlization>
 
   <!--Eloss Modules -->
     <Eloss>

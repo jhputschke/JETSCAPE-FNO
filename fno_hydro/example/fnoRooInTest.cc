@@ -103,8 +103,8 @@ int main(int argc, char** argv)
     jetscape->Add(hydro);
 
     // surface sampler
-    // auto iSS = make_shared<iSpectraSamplerWrapper> ();
-    //jetscape->Add(iSS);
+    auto iSS = make_shared<iSpectraSamplerWrapper> ();
+    jetscape->Add(iSS);
 
     auto jlossmanager = make_shared<JetEnergyLossManager> ();
     auto jloss = make_shared<JetEnergyLoss> ();

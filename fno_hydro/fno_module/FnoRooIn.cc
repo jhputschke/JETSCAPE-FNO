@@ -111,7 +111,10 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
   t=(TTree*)f->Get("t");
 
   m_xyt = nullptr;
+  m_foSurf = nullptr;
+
   t->SetBranchAddress("user_res",&m_xyt);
+  t->SetBranchAddress("foSurf",&m_foSurf);
 
   fullHydroIn = GetXMLElementInt({"Hydro", "FNOROOIN", "fullHydroIn"});
 
@@ -175,7 +178,8 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   JSINFO<<"# of FNO training features = "<<n_features;
 
-  freezeout_temperature = GetXMLElementDouble({"Hydro", "MUSIC", "freezeout_temperature"});
+  freezeout_temperature = GetXMLElementDouble({"Hydro", "FNOROOIN", "freezeout_temperature"});
+  JSINFO << "Freezeout temperature = " << freezeout_temperature << " GeV";
 
   int EOS_id_MUSIC = GetXMLElementInt({"Hydro", "FNOROOIN", "EOS_id_MUSIC"});
   JSINFO<<"Use EOS (Music id) = "<<EOS_id_MUSIC;
@@ -298,8 +302,10 @@ void FnoRooIn::EvolveHydro() {
 
   if (fullHydroIn) {
     //DEBUG:
-    //bulk_info.ntau = (*m_xyt)[0][0].size();
-    //cout<<bulk_info.ntau<<endl;
+    bulk_info.ntau = (*m_xyt)[0][0].size();
+    cout<<bulk_info.ntau<<endl;
+    cout<<m_foSurf->size()<<endl;
+
     PassHydroEvolutionHistoryToFrameworkFromRoot();
   } else {
     PassHydroEvolutionHistoryToFramework();
@@ -313,9 +319,8 @@ void FnoRooIn::EvolveHydro() {
   JSINFO << "number of fluid cells received by the JETSCAPE: "
              << bulk_info.data.size();
 
-  output.reset();
-  m_xyt->clear();
-
+  clearSurfaceCellVector();
+  FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
   /*
   if (flag_surface_in_memory == 1) {
     clearSurfaceCellVector();
@@ -323,11 +328,11 @@ void FnoRooIn::EvolveHydro() {
   } else {
     collect_freeze_out_surface();
   }
-
-  if (hydro_status == FINISHED && doCooperFrye == 1) {
-    music_hydro_ptr->run_Cooper_Frye();
-  }
   */
+
+  output.reset();
+  m_xyt->clear();
+  m_foSurf->clear();
 
   // ---------------------------------------------
   // Fix seed for JetEnergyLoss to allow event by event FNO assessment...
@@ -436,7 +441,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
 {
     JSINFO << "Passing hydro evolution information to JETSCAPE from ROOT file ... ";
 
-    for (int k=0;k<bulk_info.ntau+1;k++)
+    for (int k=0;k<bulk_info.ntau;k++)
       for (int i=0;i<bulk_info.nx;i++)
           for (int j=0;j<bulk_info.ny;j++)
           {

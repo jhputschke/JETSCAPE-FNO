@@ -436,7 +436,8 @@ off
       <centrality-high>10</centrality-high>
       <EOS_id_MUSIC>91</EOS_id_MUSIC>
        <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
-       <n_features>4</n_features>
+       <n_features>3</n_features>
+       <freezeout_temperature>0.136</freezeout_temperature>
        <nx>60</nx>
        <ny>60</ny>
        <ntau>50</ntau>
@@ -461,6 +462,7 @@ off
        <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
       <n_features>3</n_features>
       <tau0>0.5</tau0>
+      <freezeout_temperature>0.136</freezeout_temperature>
       <nx>60</nx>1
       <ny>60</ny>
       <neta>1</neta>
