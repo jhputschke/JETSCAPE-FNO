@@ -47,6 +47,7 @@ private:
   //bool has_source_terms;
   //std::shared_ptr<HydroSourceJETSCAPE> hydro_source_terms_ptr;
 
+  Jetscape::real tau0;
   Jetscape::real x_min_fno, dx_fno;
   Jetscape::real y_min_fno, dy_fno;
   Jetscape::real deta_fno;

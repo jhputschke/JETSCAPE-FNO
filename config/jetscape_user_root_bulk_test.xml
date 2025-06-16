@@ -152,12 +152,13 @@
             >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file> -->
         <!-- <root_file>bulk_root_writer_full_test_5ev.root</root_file> -->
 
-        <fullHydroIn> 0 </fullHydroIn>
+        <fullHydroIn> 1 </fullHydroIn>
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
          <!--Trained on model/hydro grid parameters, explore super resolution later !!! -->
         <n_features>3</n_features>
+        <tau0>0.5</tau0>
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>

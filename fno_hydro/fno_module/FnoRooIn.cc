@@ -150,6 +150,9 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
   // REMARK: Super-resolution requiures serilazed FNO trained model with the proper tracing tensor dimensions!!!
   // ***********************************************************************************************************
 
+  tau0 = GetXMLElementDouble({"Hydro", "FNOROOIN", "tau0"});
+  JSINFO << "Use preEq evo: tau_0 (but from XML) = " << tau0;
+
   x_min_fno = GetXMLElementDouble({"Hydro", "FNOROOIN", "x_min"});
   y_min_fno = GetXMLElementDouble({"Hydro", "FNOROOIN", "y_min"});
   //z_min_fno = GetBinMin({"Hydro", "FNO", "z_min"});
@@ -188,8 +191,8 @@ void FnoRooIn::EvolveHydro() {
   //**************************************************************
   //REMARK: Read in somehow from XML ...
   //**************************************************************
-  bulk_info.tau_min = 0.5; //pre_eq_ptr->GetPreequilibriumStartTime();
-  JSINFO << "Use preEq evo: tau_0 = " << bulk_info.tau_min<< " fm/c.";
+  bulk_info.tau_min = tau0; //pre_eq_ptr->GetPreequilibriumStartTime();
+  JSINFO << "Use preEq evo: tau_0 (from XML) = " << bulk_info.tau_min<< " fm/c.";
 
   t->GetEntry(GetCurrentEvent());
 
