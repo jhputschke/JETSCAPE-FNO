@@ -302,7 +302,7 @@ void FnoRooIn::EvolveHydro() {
 
   if (fullHydroIn) {
     //DEBUG:
-    bulk_info.ntau = (*m_xyt)[0][0].size();
+    //bulk_info.ntau = (*m_xyt)[0][0].size();
     cout<<bulk_info.ntau<<endl;
     cout<<m_foSurf->size()<<endl;
 
@@ -321,6 +321,7 @@ void FnoRooIn::EvolveHydro() {
 
   clearSurfaceCellVector();
   FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
+
   /*
   if (flag_surface_in_memory == 1) {
     clearSurfaceCellVector();
@@ -441,7 +442,13 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
 {
     JSINFO << "Passing hydro evolution information to JETSCAPE from ROOT file ... ";
 
-    for (int k=0;k<bulk_info.ntau;k++)
+    //===========================================================================
+    // REMARK: +1 or not depending on ,ax ntau or ntau from FNO < max ... fix!!!
+    //===========================================================================
+
+    int m_ntau = bulk_info.ntau+1;
+
+    for (int k=0;k<m_ntau;k++)
       for (int i=0;i<bulk_info.nx;i++)
           for (int j=0;j<bulk_info.ny;j++)
           {
