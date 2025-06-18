@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 10 </nEvents>
+  <nEvents> 1 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -212,7 +212,6 @@
       <!-- can run SMASH if I want, but not needed because we are using a separate backgound,
       but when it's used, then it needs to run SMASH separately after JETSCAPE, can add later if wanted for correct background-->
 
-      <!-- maybe used lbt later,
       <Lbt>
         <name> Lbt </name>
         <Q0> 2.0 </Q0>
@@ -221,7 +220,7 @@
         <hydro_Tc> 0.16 </hydro_Tc>
         <alphas> 0.2 </alphas>
         <run_alphas>1</run_alphas>
-      </Lbt>  -->
+      </Lbt>
 
     </Eloss>
 

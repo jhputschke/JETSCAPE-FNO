@@ -204,6 +204,8 @@ void FnoRooIn::EvolveHydro() {
 
   clear_up_evolution_data();
 
+  // ---------------------------------------------
+
   if (!fullHydroIn) {
     torch::Tensor fno_input_tensor = torch::zeros({n_features, nx_fno, ny_fno, 1});
 
@@ -298,6 +300,8 @@ void FnoRooIn::EvolveHydro() {
   //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 
+  // ---------------------------------------------
+
   SetHydroGridInfo();
 
   //start = std::chrono::high_resolution_clock::now();
@@ -321,11 +325,11 @@ void FnoRooIn::EvolveHydro() {
   JSINFO << "number of fluid cells received by the JETSCAPE: "
              << bulk_info.data.size();
 
+  // ---------------------------------------------
 
-  clearSurfaceCellVector();
+  //clearSurfaceCellVector();
   //FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
-
-  PassHydroSurfaceToFrameworkFromRoot();
+  //PassHydroSurfaceToFrameworkFromRoot();
 
   /*
   if (flag_surface_in_memory == 1) {
@@ -336,28 +340,36 @@ void FnoRooIn::EvolveHydro() {
   }
   */
 
+  // ---------------------------------------------
+
   output.reset();
   m_xyt->clear();
+
   m_foSurf->clear();
   m_foEdT->clear();
 
   // ---------------------------------------------
-  // Fix seed for JetEnergyLoss to allow event by event FNO assessment...
-  // Seems to be working with PGun !!! (Check with Pythia if needed ...)!!! and Matter, follow up with Lbt too!!!!
 
-  auto jLossManager = JetScapeSignalManager::Instance()->GetJetEnergyLossManagerPointer();
-  for (auto it : jLossManager.lock()->GetTaskList())
-  {
-    //JSINFO << it->GetId();
-    for (auto it2 : it->GetTaskList())
+  SetElossSeedsToCurrentEventNumber();
+
+}
+
+// ---------------------------------------------
+// Fix seed for JetEnergyLoss to allow event by event FNO assessment...
+// Seems to be working with PGun !!! (Check with Pythia if needed ...)!!! and Matter, follow up with Lbt too!!!!
+void::FnoRooIn::SetElossSeedsToCurrentEventNumber()
+{
+    auto jLossManager = JetScapeSignalManager::Instance()->GetJetEnergyLossManagerPointer();
+    for (auto it : jLossManager.lock()->GetTaskList())
     {
-    //JSINFO  << " " << it2->GetId() ;
-     auto mRan =  std::dynamic_pointer_cast<JetEnergyLoss>(it2)->GetMt19937Generator();
-     mRan->seed(GetCurrentEvent()+1);
+        //JSINFO << it->GetId();
+        for (auto it2 : it->GetTaskList())
+        {
+            //JSINFO  << " " << it2->GetId() << " seed to -> "<< GetCurrentEvent()+1;
+            auto mRan =  std::dynamic_pointer_cast<JetEnergyLoss>(it2)->GetMt19937Generator();
+            mRan->seed(GetCurrentEvent()+1);
+        }
     }
-  }
-
-  // ---------------------------------------------
 
 }
 

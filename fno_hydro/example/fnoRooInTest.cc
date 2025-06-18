@@ -104,12 +104,12 @@ int main(int argc, char** argv)
 
     // surface sampler
     auto iSS = make_shared<iSpectraSamplerWrapper> ();
-    jetscape->Add(iSS);
+    //jetscape->Add(iSS);
 
     auto jlossmanager = make_shared<JetEnergyLossManager> ();
     auto jloss = make_shared<JetEnergyLoss> ();
     auto matter = make_shared<Matter> ();
-    //auto lbt = make_shared<LBT> ();
+    auto lbt = make_shared<LBT> ();
 
     jloss->Add(matter);
     //jloss->Add(lbt);
