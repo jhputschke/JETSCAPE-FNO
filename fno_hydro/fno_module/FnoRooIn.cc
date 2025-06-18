@@ -124,6 +124,7 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
     JSINFO << "Full hydro input is used ...";
   } else {
     JSINFO << "FNO prediction beyond first time step is used ...";
+    JSINFO << BOLDCYAN << "IMPORTANT: edensity*Tau normalization hardcoded for now!!!";
 
     // For testing now, overwrites the env settings ...
     torch::set_num_threads(1);
@@ -228,15 +229,18 @@ void FnoRooIn::EvolveHydro() {
                 if (n_features == 4 ) {
                     fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0];
                     fno_input_tensor[1][i][j][k] = (*m_xyt)[i][j][k][1];
-                    // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
-                    fno_input_tensor[2][i][j][k] = 0;
-                    fno_input_tensor[3][i][j][k] = 0;
+                    // only for null preq module trained so far so vx=vy=0!
+                    fno_input_tensor[2][i][j][k] = (*m_xyt)[i][j][k][2];
+                    fno_input_tensor[3][i][j][k] = (*m_xyt)[i][j][k][3];
                 }
                 else if (n_features == 3) {
+                    //=============================================================
+                    //IMPORTANT: ednsity * Tau normalization hardcoded for now!!!!
+                    //=============================================================
                     fno_input_tensor[0][i][j][k] = (*m_xyt)[i][j][k][0]*bulk_info.Tau0();
-                    // only for null preq module ... extend here at some point ... when a real dynamic evolution is used and how to get the first time-step ....
-                    fno_input_tensor[1][i][j][k] = 0;
-                    fno_input_tensor[2][i][j][k] = 0;
+                    // only for null preq module trained so far so vx=vy=0!
+                    fno_input_tensor[1][i][j][k] = (*m_xyt)[i][j][k][1];
+                    fno_input_tensor[2][i][j][k] = (*m_xyt)[i][j][k][2];
                 }
                 else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
             }
@@ -306,10 +310,12 @@ void FnoRooIn::EvolveHydro() {
 
   //start = std::chrono::high_resolution_clock::now();
 
+  //DEBUG:
+  cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+
   if (fullHydroIn) {
     //DEBUG:
-    cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
-    bulk_info.ntau = (*m_xyt)[0][0].size();
+    //bulk_info.ntau = (*m_xyt)[0][0].size();
     cout<<m_foSurf->size()<<endl;
 
     PassHydroEvolutionHistoryToFrameworkFromRoot();
@@ -330,15 +336,6 @@ void FnoRooIn::EvolveHydro() {
   //clearSurfaceCellVector();
   //FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
   //PassHydroSurfaceToFrameworkFromRoot();
-
-  /*
-  if (flag_surface_in_memory == 1) {
-    clearSurfaceCellVector();
-    PassHydroSurfaceToFramework();
-  } else {
-    collect_freeze_out_surface();
-  }
-  */
 
   // ---------------------------------------------
 
@@ -429,6 +426,9 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
             }
             else if (n_features == 3) {
 
+                //=============================================================
+                //IMPORTANT: ednsity * Tau normalization hardcoded for now!!!!
+                //=============================================================
                 float eNormInverse = accessor[0][i][j][k]/(bulk_info.Tau0()+bulk_info.dtau*k);
                 float mTemperature = GetTemperatureFromEos(eNormInverse);
 
@@ -463,11 +463,12 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
     JSINFO << "Passing hydro evolution information to JETSCAPE from ROOT file ... ";
 
     //===========================================================================
-    // REMARK: +1 or not depending on ,ax ntau or ntau from FNO < max ... fix!!!
+    // REMARK: +1 or not depending on max ntau or ntau from FNO < max ... fix!!!
     //===========================================================================
 
-    cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
-    int m_ntau = bulk_info.ntau;
+    //DEBUG:
+    //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+    int m_ntau = bulk_info.ntau+1;
 
     for (int k=0;k<m_ntau;k++)
       for (int i=0;i<bulk_info.nx;i++)

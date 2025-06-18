@@ -64,76 +64,93 @@ int main(int argc, char** argv)
   JetScapeLogger::Instance()->SetVerboseLevel(0);
 
   TString fNameOut = "test_ana.root";
-  string fNameIn = "test_out.dat";
+  string fNameIn = "test_out_fno.dat";
+  string fNameIn2 = "test_out_hydro.dat";
 
   if (argc > 1)
     fNameIn = argv[1];
     if (argc > 2)
-      fNameOut = argv[2];
+      fNameIn2 = argv[2];
+      if (argc > 3)
+        fNameOut = argv[3];
 
 
   cout<<endl;
 
   TFile* file = new TFile(fNameOut, "RECREATE");
-  TH1D* hPt = new TH1D("hPt", "Pt", 60, 0, 60); hPt->Sumw2();
-  TH1D* hM = new TH1D("hM", "PM", 40, 0, 10); hM->Sumw2();
+  TH1D* hPt = new TH1D("hPt_FNO", "Pt", 60, 0, 60); hPt->Sumw2();
+  TH1D* hM = new TH1D("hM_FNO", "PM", 40, 0, 10); hM->Sumw2();
+  TH1D* hPtHydro = new TH1D("hPt_Hydro", "Pt", 60, 0, 60); hPtHydro->Sumw2();
+  TH1D* hMHydro = new TH1D("hM_hydro", "PM", 40, 0, 10); hMHydro->Sumw2();
+  TH1D* hdPt = new TH1D("hdPt","",40,-5,5);hdPt->Sumw2();
+  TH1D* hdM = new TH1D("hdM","",16,-2,2);hdM->Sumw2();
 
   //Do some dummy jetfinding ...
-  fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, 0.7);
+  fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, 0.4);
 
   vector<shared_ptr<PartonShower>> mShowers;
+  vector<shared_ptr<PartonShower>> mShowers2;
 
   // Hide Template (see class declarations in reader/JetScapeReader.h) ...
   auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
+  auto reader2=make_shared<JetScapeReaderAscii>(fNameIn2);
   //auto reader=make_shared<JetScapeReaderAsciiGZ>("test_out.dat.gz");
 
   while (!reader->Finished())
     {
       reader->Next();
+      reader2->Next();
 
-      cout<<"Analyze current event = "<<reader->GetCurrentEvent()<<endl;
+      //if (reader->GetCurrentEvent()>10) break;
+
+      cout<<"Analyze current event = "<<reader->GetCurrentEvent()<<" "<<reader2->GetCurrentEvent()<<endl;
       mShowers=reader->GetPartonShowers();
+      mShowers2=reader2->GetPartonShowers();
 
-      /*
-      int finals = 0;
-      for (int i=0;i<mShowers.size();i++) {
-	  cout<<" Analyze parton shower = "<<i<<endl;
+      cout<< mShowers[0]->GetFinalPartonsForFastJet().size()<< " "<<mShowers2[0]->GetFinalPartonsForFastJet().size()<<endl;
 
-	  //mShowers[i]->PrintVertices();
-	  //mShowers[i]->PrintPartons();
+      fjcore::ClusterSequence cs(mShowers[0]->GetFinalPartonsForFastJet(), jet_def);
+      fjcore::ClusterSequence cs2(mShowers2[0]->GetFinalPartonsForFastJet(), jet_def);
 
-	  finals += mShowers[i]->GetFinalPartonsForFastJet().size();
+      vector<fjcore::PseudoJet> jets = fjcore::sorted_by_pt(cs.inclusive_jets(2));
+      vector<fjcore::PseudoJet> jets2 = fjcore::sorted_by_pt(cs2.inclusive_jets(2));
 
-	  fjcore::ClusterSequence cs(mShowers[i]->GetFinalPartonsForFastJet(), jet_def);
-
-	  vector<fjcore::PseudoJet> jets = fjcore::sorted_by_pt(cs.inclusive_jets(2));
-	  cout<<endl;
-	  cout<<jet_def.description()<<endl;
-	  // Output of found jets ...
-	  //cout<<endl;
-	  for (int k=0;k<jets.size();k++)
+	  for (int k=0;k<jets.size();k++) {
+		if (k>0) break;
 	    cout<<"Anti-kT jet "<<k<<" : "<<jets[k]<<endl;
+		cout<<"Anti-kT jet "<<k<<" : "<<jets2[k]<<endl;
+		hdPt->Fill(jets[k].pt()-jets2[k].pt());
+		}
+
 	  cout<<endl;
-	  cout<<"Shower initiating parton : "<<*(mShowers[i]->GetPartonAt(0))<<endl;
+	  cout<<"Shower initiating parton : "<<*(mShowers[0]->GetPartonAt(0))<<endl;
+	  cout<<"Shower initiating parton : "<<*(mShowers2[0]->GetPartonAt(0))<<endl;
 	  cout<<endl;
 
-	*/
-
-	if (reader->GetCurrentEvent()>10) break;
     //cout << " Found " << finals << " final state partons." << endl;
 
       auto hadrons = reader->GetHadrons();
       cout<<"Number of hadrons is: " << hadrons.size() << endl;
 
+      auto hadrons2 = reader2->GetHadrons();
+      cout<<"Number of hadrons is: " << hadrons2.size() << endl;
+
       fjcore::ClusterSequence hcs(reader->GetHadronsForFastJet(), jet_def);
       vector<fjcore::PseudoJet> hjets = fjcore::sorted_by_pt(hcs.inclusive_jets(2));
+
+      fjcore::ClusterSequence hcs2(reader2->GetHadronsForFastJet(), jet_def);
+      vector<fjcore::PseudoJet> hjets2 = fjcore::sorted_by_pt(hcs2.inclusive_jets(2));
       //cout<<"AT HADRONIC LEVEL " << endl;
       cout<<"Number of Jets is : "<<hjets.size()<<endl;
       for (int k=0;k<hjets.size();k++) {
           if (k>0) break;
           cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;
+          cout<<"Anti-kT jet "<<k<<" : "<<hjets2[k]<<endl;
           hPt->Fill(hjets[k].pt());
           hM->Fill(hjets[k].m());
+          hPtHydro->Fill(hjets2[k].pt());
+          hMHydro->Fill(hjets2[k].m());
+          //hdPt->Fill(hjets[k].pt()-hjets2[k].pt());
       }
 
     }
