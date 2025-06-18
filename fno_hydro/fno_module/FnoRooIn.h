@@ -66,6 +66,7 @@ private:
   //std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
   std::vector<std::vector<std::vector<std::vector<float>>>> *m_xyt;
   std::vector<std::vector<float>> *m_foSurf;
+  std::vector<float> *m_foEdT;
 
   torch::jit::script::Module module;
   torch::Tensor output;
@@ -95,6 +96,7 @@ public:
   void SetHydroGridInfo();
   void PassHydroEvolutionHistoryToFrameworkFromRoot();
   void PassHydroEvolutionHistoryToFramework();
+  void PassHydroSurfaceToFrameworkFromRoot();
   //void PassHydroSurfaceToFramework();
 
   //void add_a_liquefier(std::shared_ptr<LiquefierBase> new_liqueifier) {

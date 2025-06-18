@@ -26,7 +26,7 @@
 #include "JetScapeSignalManager.h"
 #include "JetEnergyLoss.h"
 #include "JetScape.h"
-//#include "surfaceCell.h"
+#include "SurfaceCellInfo.h"
 #include "FnoRooIn.h"
 #include "util.h"
 
@@ -112,9 +112,11 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   m_xyt = nullptr;
   m_foSurf = nullptr;
+  m_foEdT = nullptr;
 
   t->SetBranchAddress("user_res",&m_xyt);
   t->SetBranchAddress("foSurf",&m_foSurf);
+  t->SetBranchAddress("foEdT",&m_foEdT);
 
   fullHydroIn = GetXMLElementInt({"Hydro", "FNOROOIN", "fullHydroIn"});
 
@@ -302,8 +304,8 @@ void FnoRooIn::EvolveHydro() {
 
   if (fullHydroIn) {
     //DEBUG:
-    //bulk_info.ntau = (*m_xyt)[0][0].size();
-    cout<<bulk_info.ntau<<endl;
+    cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+    bulk_info.ntau = (*m_xyt)[0][0].size();
     cout<<m_foSurf->size()<<endl;
 
     PassHydroEvolutionHistoryToFrameworkFromRoot();
@@ -319,8 +321,11 @@ void FnoRooIn::EvolveHydro() {
   JSINFO << "number of fluid cells received by the JETSCAPE: "
              << bulk_info.data.size();
 
+
   clearSurfaceCellVector();
-  FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
+  //FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
+
+  PassHydroSurfaceToFrameworkFromRoot();
 
   /*
   if (flag_surface_in_memory == 1) {
@@ -334,6 +339,7 @@ void FnoRooIn::EvolveHydro() {
   output.reset();
   m_xyt->clear();
   m_foSurf->clear();
+  m_foEdT->clear();
 
   // ---------------------------------------------
   // Fix seed for JetEnergyLoss to allow event by event FNO assessment...
@@ -410,10 +416,12 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
                 fluid_cell_info_ptr->vy = accessor[3][i][j][k];
             }
             else if (n_features == 3) {
+
                 float eNormInverse = accessor[0][i][j][k]/(bulk_info.Tau0()+bulk_info.dtau*k);
+                float mTemperature = GetTemperatureFromEos(eNormInverse);
 
                 fluid_cell_info_ptr->energy_density = eNormInverse;
-                fluid_cell_info_ptr->temperature = GetTemperatureFromEos(eNormInverse);
+                fluid_cell_info_ptr->temperature = mTemperature; //GetTemperatureFromEos(eNormInverse);
                 fluid_cell_info_ptr->vx = accessor[1][i][j][k];
                 fluid_cell_info_ptr->vy = accessor[2][i][j][k];
             }
@@ -446,7 +454,8 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
     // REMARK: +1 or not depending on ,ax ntau or ntau from FNO < max ... fix!!!
     //===========================================================================
 
-    int m_ntau = bulk_info.ntau+1;
+    cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+    int m_ntau = bulk_info.ntau;
 
     for (int k=0;k<m_ntau;k++)
       for (int i=0;i<bulk_info.nx;i++)
@@ -489,39 +498,42 @@ float FnoRooIn::GetTemperatureFromEos(float ed) {
     return fnoEOS->get_temperature((float) ed/Util::hbarc, 0)*Util::hbarc;
 }
 
-/*
-void FnoHydro::PassHydroSurfaceToFramework() {
-    JSINFO << "Passing hydro surface cells to JETSCAPE ... ";
-    auto number_of_cells = music_hydro_ptr->get_number_of_surface_cells();
+void FnoRooIn::PassHydroSurfaceToFrameworkFromRoot() {
+    JSINFO << "Passing hydro surface cells to JETSCAPE from ROOT file ... ";
+    auto number_of_cells = m_foSurf->size();
     JSINFO << "total number of fluid cells: " << number_of_cells;
-    SurfaceCell surfaceCell_i;
+
     for (int i = 0; i < number_of_cells; i++) {
         SurfaceCellInfo surface_cell_info;
-        music_hydro_ptr->get_surface_cell_with_index(i, surfaceCell_i);
-        surface_cell_info.tau = surfaceCell_i.xmu[0];
-        surface_cell_info.x = surfaceCell_i.xmu[1];
-        surface_cell_info.y = surfaceCell_i.xmu[2];
-        surface_cell_info.eta = surfaceCell_i.xmu[3];
-        double u[4];
-        for (int j = 0; j < 4; j++) {
-            surface_cell_info.d3sigma_mu[j] = surfaceCell_i.d3sigma_mu[j];
-            surface_cell_info.umu[j] = surfaceCell_i.umu[j];
-        }
-        surface_cell_info.energy_density = surfaceCell_i.energy_density;
-        surface_cell_info.temperature = surfaceCell_i.temperature;
-        surface_cell_info.pressure = surfaceCell_i.pressure;
-        surface_cell_info.baryon_density = surfaceCell_i.rho_b;
-        surface_cell_info.mu_B = surfaceCell_i.mu_B;
-        surface_cell_info.mu_Q = surfaceCell_i.mu_Q;
-        surface_cell_info.mu_S = surfaceCell_i.mu_S;
+
+        surface_cell_info.tau = (*m_foSurf)[i][0];
+        surface_cell_info.x =  (*m_foSurf)[i][1];
+        surface_cell_info.y =  (*m_foSurf)[i][2];
+        surface_cell_info.eta = 0;
+        surface_cell_info.d3sigma_mu[0] = (*m_foSurf)[i][3];
+        surface_cell_info.d3sigma_mu[1] = (*m_foSurf)[i][4];
+        surface_cell_info.d3sigma_mu[2] = (*m_foSurf)[i][5];
+        surface_cell_info.d3sigma_mu[3] = 0;
+        surface_cell_info.umu[0] =  (*m_foSurf)[i][6];
+        surface_cell_info.umu[1] =  (*m_foSurf)[i][7];
+        surface_cell_info.umu[2] =  (*m_foSurf)[i][8];
+        surface_cell_info.umu[3] =  0;
+
+        surface_cell_info.energy_density = (*m_foEdT)[0];
+        surface_cell_info.temperature = (*m_foEdT)[1];
+
+        surface_cell_info.pressure = 0;
+        surface_cell_info.baryon_density = 0;
+        surface_cell_info.mu_B = 0;
+        surface_cell_info.mu_Q =0;
+        surface_cell_info.mu_S = 0;
         for (int j = 0; j < 10; j++) {
-            surface_cell_info.pi[j] = surfaceCell_i.shear_pi[j];
+            surface_cell_info.pi[j] = 0;
         }
-        surface_cell_info.bulk_Pi = surfaceCell_i.bulk_Pi;
+        surface_cell_info.bulk_Pi = 0;
         StoreSurfaceCell(surface_cell_info);
     }
 }
-*/
 
 void FnoRooIn::GetHydroInfo(
     Jetscape::real t, Jetscape::real x, Jetscape::real y, Jetscape::real z,

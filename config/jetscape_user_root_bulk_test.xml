@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 1 </nEvents>
+  <nEvents> 10 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -148,8 +148,8 @@
         <!-- <model_file
             >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file> -->
         <root_file
-            > /Users/du8478/FNO_Hydro_Data/full_cent_0_10_1kev.root</root_file>
-        <!-- <root_file
+            > /Users/du8478/FNO_Hydro_Data/cent_40_60_10K_events.root </root_file>
+        <!-- <root_file full_cent_0_10_1kev.root</root_file> cent_40_60_10K_events.root
             >/Users/du8478/FNO_Hydro_Data/AuAu_0_10_ideal_JS_3.7_user_res/bulk_root_writer_JS_3.7_AuAu_0_10_250ev.root</root_file> -->
         <!-- <root_file>bulk_root_writer_full_test_5ev.root</root_file> -->
 
@@ -186,6 +186,8 @@
          <iSS_particle_table_path>iSS_tables</iSS_particle_table_path>
          <afterburner_type>2</afterburner_type>
          <number_of_repeated_sampling>1</number_of_repeated_sampling>
+         <include_deltaf_shear>0</include_deltaf_shear>
+         <include_deltaf_bulk>0</include_deltaf_bulk>
          <Perform_resonance_decays>0</Perform_resonance_decays>
      </iSS>
    </SoftParticlization>
