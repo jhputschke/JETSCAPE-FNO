@@ -2,7 +2,7 @@
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
  * Modular, task-based framework for simulating all aspects of heavy-ion collisions
- * 
+ *
  * For the list of contributors see AUTHORS.
  *
  * Report issues at https://github.com/JETSCAPE/JETSCAPE/issues
@@ -49,8 +49,10 @@ JetScapeParticleBase::JetScapeParticleBase(int label, int id, int stat,
   set_id(id);
   init_jet_v();
 
-  assert(InternalHelperPythia.particleData.isParticle(id));
-  set_restmass(InternalHelperPythia.particleData.m0(id));
+  //assert(InternalHelperPythia.particleData.isParticle(id));
+  // REMARK JP: Bad fix, error with PID 9000113 for example from ISS !!!
+  if (InternalHelperPythia.particleData.isParticle(id))
+    set_restmass(InternalHelperPythia.particleData.m0(id));
 
   reset_momentum(pt * cos(phi), pt * sin(phi), pt * sinh(eta), e);
   set_stat(stat);
@@ -545,21 +547,21 @@ Photon &Photon::operator=(const Photon &ph) {
   return *this;
 }
 // ---------------
-// Qvector (soft particles)  
+// Qvector (soft particles)
 // ---------------
 
 Qvector::Qvector(double pt_min, double pt_max, int npt, double y_min, double y_max, int ny, int norder, int pid, int rapidity_type): pt_min_(pt_min), pt_max_(pt_max), npt_(npt), y_min_(y_min), y_max_(y_max), ny_(ny), ncols_(norder*4+3),norder_(norder), pid_(pid), rapidity_type_(rapidity_type) {
 	dpt_ = (pt_max - pt_min) / npt ;
   dy_ = (y_max - y_min) / ny ;
 	hist_.resize(npt, std::vector<std::vector<double>>(ny, std::vector<double>(ncols_, 0.0)));
-	gridpT_.reserve(npt); 
+	gridpT_.reserve(npt);
         gridy_.reserve(ny);
         total_num_ = 0;
-        
+
 	for (int i = 0; i < npt; ++i) {
             gridpT_.push_back(pt_min_ + (i+0.5) * dpt_);
         }
-        
+
 	for (int i = 0; i < ny; ++i) {
             gridy_.push_back(y_min_ + (i+0.5)* dy_);
         }
@@ -577,7 +579,7 @@ void Qvector::fill(double pt_in, double y_in, int col_in, double val) {
     }
 
 void Qvector::fill_particle(const shared_ptr<Hadron>& h){
-       double phi= h->phi();  
+       double phi= h->phi();
        double pT = h->perp();
        double y =  h->eta();
        if(rapidity_type_) y = h->rap();
@@ -591,21 +593,21 @@ void Qvector::fill_particle(const shared_ptr<Hadron>& h){
 
        fill(pT,y,5,1);
        fill(pT,y,6,1*1);
-       
-        
+
+
 
        for(int iorder=1 ; iorder<norder_ ; iorder++){
            fill(pT, y, 4*iorder + 3, cos(iorder*phi));
            fill(pT, y, 4*iorder + 4, sin(iorder*phi));
            fill(pT, y, 4*iorder + 5, cos(iorder*phi)*cos(iorder*phi));
            fill(pT, y, 4*iorder + 6, sin(iorder*phi)*sin(iorder*phi));
-       } 
+       }
 }
 
 double Qvector::get_pt(int idx) const {
     if (idx < 0 || idx >= npt_) {
 	std::cerr << "Index out of bounds in pt array of Qvector" << std::endl;
-        return -1;  
+        return -1;
     }
     return gridpT_[idx];
 }
@@ -613,7 +615,7 @@ double Qvector::get_pt(int idx) const {
 double Qvector::get_y(int idx) const {
     if (idx < 0 || idx >= ny_) {
 	std::cerr << "Index out of bounds in y array of Qvector" << std::endl;
-        return -1;  
+        return -1;
     }
     return gridy_[idx];
 }
