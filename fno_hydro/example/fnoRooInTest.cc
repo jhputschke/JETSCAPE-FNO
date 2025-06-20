@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
     auto jetscape = make_shared<JetScape>();
     jetscape->SetXMLMainFileName("../config/jetscape_main.xml");
-    jetscape->SetXMLUserFileName("../config/jetscape_user_root_bulk_test.xml");
+    jetscape->SetXMLUserFileName("../fno_hydro/config/jetscape_user_root_bulk_test.xml");
     //jetscape->SetReuseHydro (false);
     //jetscape->SetNReuseHydro (0);
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 
     // surface sampler
     auto iSS = make_shared<iSpectraSamplerWrapper> ();
-    //jetscape->Add(iSS);
+    jetscape->Add(iSS);
 
     auto jlossmanager = make_shared<JetEnergyLossManager> ();
     auto jloss = make_shared<JetEnergyLoss> ();
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
     jloss->Add(matter);
     //jloss->Add(lbt);
     jlossmanager->Add(jloss);
-    jetscape->Add(jlossmanager);
+    //jetscape->Add(jlossmanager);
 
     // Hadronization
     auto hadroMgr = make_shared<HadronizationManager> ();
