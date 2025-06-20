@@ -102,7 +102,7 @@ class DemoBulk : public JetScapeModuleBase
       cout<<"InitBranch : "<<nX<<" "<<nY<<" "<<nT<<endl;
       initBranch = true;
       m_xyt=std::vector<std::vector<std::vector<double>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
-      
+
       t->Branch("sim",&m_xyt);
       t->Branch("sim2",&m_xyt2);
   }
@@ -165,7 +165,7 @@ class DemoBulk : public JetScapeModuleBase
 
     if (!initBranch)
         InitBranch(nX,nY,250);
-    
+
     //works with arbitrary size ... but maybe later wrt to FNO etc ... start maaybe with fixed tau bins ...
     m_xyt2=std::vector<std::vector<std::vector<double>>>(nX, std::vector<std::vector<double>>(nY, std::vector<double>(nT)));
 
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
 
     auto jetscape = make_shared<JetScape>();
     jetscape->SetXMLMainFileName("../config/jetscape_main.xml");
-    jetscape->SetXMLUserFileName("../config/jetscape_user_root_bulk_test.xml");
+    jetscape->SetXMLUserFileName("../fno_hydro/config/jetscape_user_root_bulk_test.xml");
     //jetscape->SetReuseHydro (false);
     //jetscape->SetNReuseHydro (0);
 
