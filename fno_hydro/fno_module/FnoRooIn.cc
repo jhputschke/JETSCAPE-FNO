@@ -90,6 +90,7 @@ FnoRooIn::FnoRooIn() : device({}) {
   deta_fno = 0.0;
 
   fullHydroIn = false;
+  bulkHadroFull = false;
   //device = torch::Device({});
   //has_source_terms = false;
   SetId("FnoRooIn");
@@ -119,10 +120,13 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
   t->SetBranchAddress("foEdT",&m_foEdT);
 
   fullHydroIn = GetXMLElementInt({"Hydro", "FNOROOIN", "fullHydroIn"});
+  bulkHadroFull = GetXMLElementInt({"Hydro", "FNOROOIN", "bulkHadroFull"});
 
   if (fullHydroIn) {
     JSINFO << "Full hydro input is used ...";
+    JSINFO << "Bulk Hadronization full on/off = "<<bulkHadroFull;
   } else {
+    JSINFO << "Bulk Hadronization full on/off = "<<bulkHadroFull;
     JSINFO << "FNO prediction beyond first time step is used ...";
     JSINFO << BOLDCYAN << "IMPORTANT: edensity*Tau normalization hardcoded for now!!!";
 
@@ -193,21 +197,97 @@ void FnoRooIn::EvolveHydro() {
   VERBOSE(8);
   JSINFO << "Initialize density profiles in FnoHydro ...";
 
-  //auto start = std::chrono::high_resolution_clock::now();
-
-  //**************************************************************
-  //REMARK: Read in somehow from XML ...
-  //**************************************************************
   bulk_info.tau_min = tau0; //pre_eq_ptr->GetPreequilibriumStartTime();
   JSINFO << "Use preEq evo: tau_0 (from XML) = " << bulk_info.tau_min<< " fm/c.";
 
-  t->GetEntry(GetCurrentEvent());
-
+  // ---------------------------------------------
+  //
   clear_up_evolution_data();
+
+  t->GetEntry(GetCurrentEvent());
 
   // ---------------------------------------------
 
-  if (!fullHydroIn) {
+  SetHydroGridInfo();
+
+  bool useEvent = true;
+
+  if (bulkHadroFull)
+  {
+      auto softHadro = JetScapeSignalManager::Instance()->GetSoftParticlizationPointer();
+      if (!softHadro.lock()) {JSWARN<<"Asked for bulk hadronization, but no SoftParticlization module found!"; exit(-1);}
+
+      softHadro.lock()->SetActive(true);
+
+      int m_root_ntau =  (*m_xyt)[0][0].size() ;
+      //DEBUG:
+     // cout<<m_root_ntau<<endl;
+      //cout<<m_foSurf->size()<<endl;
+      //
+      if (m_root_ntau > bulk_info.ntau)
+      {
+          useEvent = false;
+          JSINFO<<BOLDCYAN<<"Skip this event for bulk hadronization since FNO prediction timestep < the Hydro from file length:  "<<bulk_info.ntau<< " < "<<m_root_ntau;
+          softHadro.lock()->SetActive(false);
+      }
+  }
+
+  // ---------------------------------------------
+
+  if (useEvent)
+  {
+    //auto start = std::chrono::high_resolution_clock::now();
+    //DEBUG:
+    //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+
+    // ---------------------------------------------
+
+    if (fullHydroIn)
+    {
+        PassHydroEvolutionHistoryToFrameworkFromRoot();
+    }
+    else
+    {
+        GetFnoPrediction();
+        PassHydroEvolutionHistoryToFramework();
+    }
+
+    //auto end = std::chrono::high_resolution_clock::now();
+    //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+
+    JSINFO << "number of fluid cells received by the JETSCAPE: "
+                << bulk_info.data.size();
+
+    // ---------------------------------------------
+
+    if (bulkHadroFull) {
+    clearSurfaceCellVector();
+    FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
+    //PassHydroSurfaceToFrameworkFromRoot();
+    }
+
+    // ---------------------------------------------
+  }
+
+ // ---------------------------------------------
+
+  output.reset();
+  m_xyt->clear();
+
+  m_foSurf->clear();
+  m_foEdT->clear();
+
+  // ---------------------------------------------
+
+  SetElossSeedsToCurrentEventNumber();
+
+}
+
+// ---------------------------------------------
+//
+void FnoRooIn:: GetFnoPrediction()
+{
     torch::Tensor fno_input_tensor = torch::zeros({n_features, nx_fno, ny_fno, 1});
 
     string tensorShapeInput = "Input Tensor shape from Root file tauId = 0 : ";
@@ -297,58 +377,6 @@ void FnoRooIn::EvolveHydro() {
 
         hydro_status = FINISHED;
     }
-  }
-
-  //auto end = std::chrono::high_resolution_clock::now();
-  // Calculate duration
-  //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
-
-  // ---------------------------------------------
-
-  SetHydroGridInfo();
-
-  //start = std::chrono::high_resolution_clock::now();
-
-  //DEBUG:
-  cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
-
-  if (fullHydroIn) {
-    //DEBUG:
-    //bulk_info.ntau = (*m_xyt)[0][0].size();
-    cout<<m_foSurf->size()<<endl;
-
-    PassHydroEvolutionHistoryToFrameworkFromRoot();
-  } else {
-    PassHydroEvolutionHistoryToFramework();
-  }
-
-  //end = std::chrono::high_resolution_clock::now();
-  // Calculate duration
-  //duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
-
-  JSINFO << "number of fluid cells received by the JETSCAPE: "
-             << bulk_info.data.size();
-
-  // ---------------------------------------------
-
-  //clearSurfaceCellVector();
-  //FindAConstantTemperatureSurface(freezeout_temperature, surfaceCellVector_);
-  //PassHydroSurfaceToFrameworkFromRoot();
-
-  // ---------------------------------------------
-
-  output.reset();
-  m_xyt->clear();
-
-  m_foSurf->clear();
-  m_foEdT->clear();
-
-  // ---------------------------------------------
-
-  SetElossSeedsToCurrentEventNumber();
-
 }
 
 // ---------------------------------------------
@@ -357,14 +385,17 @@ void FnoRooIn::EvolveHydro() {
 void::FnoRooIn::SetElossSeedsToCurrentEventNumber()
 {
     auto jLossManager = JetScapeSignalManager::Instance()->GetJetEnergyLossManagerPointer();
-    for (auto it : jLossManager.lock()->GetTaskList())
+    if (jLossManager.lock())
     {
-        //JSINFO << it->GetId();
-        for (auto it2 : it->GetTaskList())
+        for (auto it : jLossManager.lock()->GetTaskList())
         {
-            //JSINFO  << " " << it2->GetId() << " seed to -> "<< GetCurrentEvent()+1;
-            auto mRan =  std::dynamic_pointer_cast<JetEnergyLoss>(it2)->GetMt19937Generator();
-            mRan->seed(GetCurrentEvent()+1);
+            //JSINFO << it->GetId();
+            for (auto it2 : it->GetTaskList())
+            {
+                //JSINFO  << " " << it2->GetId() << " seed to -> "<< GetCurrentEvent()+1;
+                auto mRan =  std::dynamic_pointer_cast<JetEnergyLoss>(it2)->GetMt19937Generator();
+                mRan->seed(GetCurrentEvent()+1);
+            }
         }
     }
 
@@ -432,10 +463,20 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
                 float eNormInverse = accessor[0][i][j][k]/(bulk_info.Tau0()+bulk_info.dtau*k);
                 float mTemperature = GetTemperatureFromEos(eNormInverse);
 
-                fluid_cell_info_ptr->energy_density = eNormInverse;
-                fluid_cell_info_ptr->temperature = mTemperature; //GetTemperatureFromEos(eNormInverse);
-                fluid_cell_info_ptr->vx = accessor[1][i][j][k];
-                fluid_cell_info_ptr->vy = accessor[2][i][j][k];
+                if (mTemperature>freezeout_temperature)
+                {
+                    fluid_cell_info_ptr->energy_density = eNormInverse;
+                    fluid_cell_info_ptr->temperature = mTemperature; //GetTemperatureFromEos(eNormInverse);
+                    fluid_cell_info_ptr->vx = accessor[1][i][j][k];
+                    fluid_cell_info_ptr->vy = accessor[2][i][j][k];
+                }
+                else
+                {
+                    fluid_cell_info_ptr->energy_density = 0;
+                    fluid_cell_info_ptr->temperature = 0; //GetTemperatureFromEos(eNormInverse);
+                    fluid_cell_info_ptr->vx = 0;
+                    fluid_cell_info_ptr->vy = 0;
+                }
             }
             else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
 
@@ -468,7 +509,17 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
 
     //DEBUG:
     //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+    int ntau_root = (*m_xyt)[0][0].size();
     int m_ntau = bulk_info.ntau+1;
+    if (bulk_info.ntau>ntau_root) {
+        m_ntau = ntau_root;
+        bulk_info.ntau = m_ntau;
+    }
+
+    //REMARK: Shortcut for using the full stored hydro information ...
+    //        (write seperate module for just reading in ROOT file to decouple FNO validation)
+    //bulk_info.ntau = (*m_xyt)[0][0].size();
+    //m_ntau = bulk_info.ntau;
 
     for (int k=0;k<m_ntau;k++)
       for (int i=0;i<bulk_info.nx;i++)

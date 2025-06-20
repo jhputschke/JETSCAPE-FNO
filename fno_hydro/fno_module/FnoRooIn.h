@@ -59,6 +59,7 @@ private:
 
   int n_features;
   bool fullHydroIn;
+  bool bulkHadroFull;
 
   TFile *f;
   TTree *t;
@@ -75,6 +76,8 @@ private:
   std::unique_ptr<EOS> fnoEOS;
   float GetTemperatureFromEos(float ed);
   void SetElossSeedsToCurrentEventNumber();
+
+  void GetFnoPrediction();
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
