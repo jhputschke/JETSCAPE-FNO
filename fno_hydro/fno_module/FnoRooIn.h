@@ -78,6 +78,7 @@ private:
   void SetElossSeedsToCurrentEventNumber();
 
   void GetFnoPrediction();
+  bool CheckEventForFullHadro();
 
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.

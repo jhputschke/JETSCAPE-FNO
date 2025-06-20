@@ -201,7 +201,7 @@ void FnoRooIn::EvolveHydro() {
   JSINFO << "Use preEq evo: tau_0 (from XML) = " << bulk_info.tau_min<< " fm/c.";
 
   // ---------------------------------------------
-  //
+
   clear_up_evolution_data();
 
   t->GetEntry(GetCurrentEvent());
@@ -213,24 +213,7 @@ void FnoRooIn::EvolveHydro() {
   bool useEvent = true;
 
   if (bulkHadroFull)
-  {
-      auto softHadro = JetScapeSignalManager::Instance()->GetSoftParticlizationPointer();
-      if (!softHadro.lock()) {JSWARN<<"Asked for bulk hadronization, but no SoftParticlization module found!"; exit(-1);}
-
-      softHadro.lock()->SetActive(true);
-
-      int m_root_ntau =  (*m_xyt)[0][0].size() ;
-      //DEBUG:
-     // cout<<m_root_ntau<<endl;
-      //cout<<m_foSurf->size()<<endl;
-      //
-      if (m_root_ntau > bulk_info.ntau)
-      {
-          useEvent = false;
-          JSINFO<<CYAN<<"Skip this event for bulk hadronization since FNO prediction timestep < the Hydro from file length:  "<<bulk_info.ntau<< " < "<<m_root_ntau;
-          softHadro.lock()->SetActive(false);
-      }
-  }
+    useEvent = CheckEventForFullHadro();
 
   // ---------------------------------------------
 
@@ -282,6 +265,32 @@ void FnoRooIn::EvolveHydro() {
 
   SetElossSeedsToCurrentEventNumber();
 
+}
+
+// ---------------------------------------------
+
+bool FnoRooIn::CheckEventForFullHadro()
+{
+    bool useEvent = true;
+
+    auto softHadro = JetScapeSignalManager::Instance()->GetSoftParticlizationPointer();
+    if (!softHadro.lock()) {JSWARN<<"Asked for bulk hadronization, but no SoftParticlization module found!"; exit(-1);}
+
+    softHadro.lock()->SetActive(true);
+
+    int m_root_ntau =  (*m_xyt)[0][0].size() ;
+    //DEBUG:
+   // cout<<m_root_ntau<<endl;
+    //cout<<m_foSurf->size()<<endl;
+    //
+    if (m_root_ntau > bulk_info.ntau)
+    {
+        useEvent = false;
+        JSINFO<<CYAN<<"Skip this event for bulk hadronization since FNO prediction timestep < the Hydro from file length:  "<<bulk_info.ntau<< " < "<<m_root_ntau;
+        softHadro.lock()->SetActive(false);
+    }
+
+    return useEvent;
 }
 
 // ---------------------------------------------
