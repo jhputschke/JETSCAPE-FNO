@@ -134,7 +134,7 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
     torch::set_num_threads(1);
     JSINFO << "Number of threads (libtorch OMP): " << torch::get_num_threads();
     //device = torch::Device(torch::kMPS);
-    JSINFO << "Default device: " << device; // << std::endl;
+    JSINFO << "Default device: " << device << " (for now only CPU supported!)";// << std::endl;
 
     try {
     // ************************************************************************************
@@ -227,7 +227,7 @@ void FnoRooIn::EvolveHydro() {
       if (m_root_ntau > bulk_info.ntau)
       {
           useEvent = false;
-          JSINFO<<BOLDCYAN<<"Skip this event for bulk hadronization since FNO prediction timestep < the Hydro from file length:  "<<bulk_info.ntau<< " < "<<m_root_ntau;
+          JSINFO<<CYAN<<"Skip this event for bulk hadronization since FNO prediction timestep < the Hydro from file length:  "<<bulk_info.ntau<< " < "<<m_root_ntau;
           softHadro.lock()->SetActive(false);
       }
   }
