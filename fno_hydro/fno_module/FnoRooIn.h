@@ -35,6 +35,9 @@
 #include "TROOT.h"
 #include "TSystem.h"
 #include "TTree.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TH3.h"
 
 using namespace Jetscape;
 
@@ -64,6 +67,8 @@ private:
   TFile *f;
   TTree *t;
 
+  TFile *fOut;
+
   //std::vector<std::vector<std::vector<std::vector<double>>>> *m_xyt;
   std::vector<std::vector<std::vector<std::vector<float>>>> *m_xyt;
   std::vector<std::vector<float>> *m_foSurf;
@@ -80,6 +85,12 @@ private:
   void GetFnoPrediction();
   bool CheckEventForFullHadro();
 
+  void Fill2dHist(TH2F* h2d, int ntau);
+  //void Fill3dHist(TH3F* h3d);
+  void Fill3dHist(TH3F* h3d, TH3F* h3dOrg);
+  void Print2dHist();
+  void Save3dHist();
+
   // Allows the registration of the module so that it is available to be
   // used by the Jetscape framework.
   static RegisterJetScapeModule<FnoRooIn> reg;
@@ -90,6 +101,7 @@ public:
   ~FnoRooIn();
 
   void InitializeHydro(Parameter parameter_list);
+  virtual void FinishTask();
 
   void EvolveHydro();
   void GetHydroInfo(Jetscape::real t, Jetscape::real x, Jetscape::real y,

@@ -33,9 +33,6 @@
 #include <Riostream.h>
 #include "TRandom.h"
 #include "TCanvas.h"
-#include "TH1.h"
-#include "TH2.h"
-#include "TH3.h"
 #include "TF1.h"
 #include "TMath.h"
 
@@ -100,6 +97,14 @@ FnoRooIn::FnoRooIn() : device({}) {
 
 FnoRooIn::~FnoRooIn() {}
 
+void FnoRooIn::FinishTask()
+{
+    if (fOut) {
+    fOut->Write();
+    fOut->Close();
+    }
+}
+
 void FnoRooIn::InitializeHydro(Parameter parameter_list) {
   JSINFO << "Initialize FnoRooIn ...";
   VERBOSE(8);
@@ -110,6 +115,9 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   f=new TFile(input_root_file.c_str(),"READ");
   t=(TTree*)f->Get("t");
+
+  //Make more general/debug for now ...
+  //fOut=new TFile("fno_predictions.root","RECREATE");
 
   m_xyt = nullptr;
   m_foSurf = nullptr;
@@ -242,6 +250,8 @@ void FnoRooIn::EvolveHydro() {
     JSINFO << "number of fluid cells received by the JETSCAPE: "
                 << bulk_info.data.size();
 
+    //DEBUG for now only ...
+    //Save3dHist(); //Print2dHist();
     // ---------------------------------------------
 
     if (bulkHadroFull) {
@@ -391,7 +401,7 @@ void FnoRooIn:: GetFnoPrediction()
 // ---------------------------------------------
 // Fix seed for JetEnergyLoss to allow event by event FNO assessment...
 // Seems to be working with PGun !!! (Check with Pythia if needed ...)!!! and Matter, follow up with Lbt too!!!!
-void::FnoRooIn::SetElossSeedsToCurrentEventNumber()
+void FnoRooIn::SetElossSeedsToCurrentEventNumber()
 {
     auto jLossManager = JetScapeSignalManager::Instance()->GetJetEnergyLossManagerPointer();
     if (jLossManager.lock())
@@ -409,6 +419,84 @@ void::FnoRooIn::SetElossSeedsToCurrentEventNumber()
     }
 
 }
+
+// --------------------------------------------------------
+// --------------------------------------------------------
+//DEBUG only for now ... needs more work to generalize ...
+
+void FnoRooIn::Fill3dHist(TH3F* h3d, TH3F* h3dOrg)
+{
+    for (int k=0; k<(*m_xyt)[0][0].size();k++) {
+        for (int i=0; i<(bulk_info.nx); i++){
+            for (int j=-0; j<(bulk_info.ny); j++){
+
+            int nIndex = bulk_info.CellIndex(k,i,j,0); // last eta here index 0 since boost invariant ...
+            auto mCell = bulk_info.data.at(nIndex);
+
+            h3d->SetBinContent(i,j,k,(float) (mCell.energy_density));
+            h3dOrg->SetBinContent(i,j,k,(float) (*m_xyt)[i][j][k][0]);
+            }
+        }
+    }
+}
+
+void FnoRooIn::Save3dHist()
+{
+    TH3F *hFno=new TH3F("hFno","hFno",60,0,60,60,0,60,50,0,50);
+    TH3F *hHydro=new TH3F("hHydro","hHydro",60,0,60,60,0,60,50,0,50);
+
+    Fill3dHist(hFno, hHydro);
+
+    string currentEv = std::to_string(GetCurrentEvent());
+    string sFno = "hFno_"; sFno += currentEv;
+    string sHyd = "hHydro_"; sHyd += currentEv;
+
+    fOut->cd();
+    hFno->Write(sFno.c_str());
+    hHydro->Write(sHyd.c_str());
+
+    delete hFno; delete hHydro;
+}
+
+void FnoRooIn::Fill2dHist(TH2F* h2d, int ntau)
+{
+    for (int i=0; i<(bulk_info.nx); i++){
+        for (int j=-0; j<(bulk_info.ny); j++){
+
+        int nIndex = bulk_info.CellIndex(ntau,i,j,0); // last eta here index 0 since boost invariant ...
+        auto mCell = bulk_info.data.at(nIndex);
+
+        h2d->SetBinContent(i,j,(float) (mCell.energy_density));
+
+        }
+    }
+}
+
+void FnoRooIn::Print2dHist()
+{
+    TH2F *hIn=new TH2F("hIn","hIn",60,0,60,60,0,60);
+    TH2F *h25=new TH2F("h25","h25",60,0,60,60,0,60);
+
+    Fill2dHist(hIn,0);
+    Fill2dHist(h25,(*m_xyt)[0][0].size());
+
+    TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
+    hIn->SetStats(0);
+    hIn->Draw("colz");
+    c1->SaveAs("hIn.gif");
+
+    TCanvas *c2 = new TCanvas("c2", "Canvas", 800, 600);
+    h25->SetStats(0);
+    h25->Draw("colz");
+    c2->SaveAs("h25.gif");
+
+    delete hIn; delete h25; delete c1; delete c2;
+
+
+}
+
+// --------------------------------------------------------
+// --------------------------------------------------------
 
 void FnoRooIn::SetHydroGridInfo() {
 
@@ -472,6 +560,13 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
                 float eNormInverse = accessor[0][i][j][k]/(bulk_info.Tau0()+bulk_info.dtau*k);
                 float mTemperature = GetTemperatureFromEos(eNormInverse);
 
+                fluid_cell_info_ptr->energy_density = eNormInverse;
+                fluid_cell_info_ptr->temperature = mTemperature; //GetTemperatureFromEos(eNormInverse);
+                fluid_cell_info_ptr->vx = accessor[1][i][j][k];
+                fluid_cell_info_ptr->vy = accessor[2][i][j][k];
+
+                // Check if this cut alrerady here made the problem with the overall mult problem with semi central using central FNO ...
+                /*
                 if (mTemperature>freezeout_temperature)
                 {
                     fluid_cell_info_ptr->energy_density = eNormInverse;
@@ -486,6 +581,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
                     fluid_cell_info_ptr->vx = 0;
                     fluid_cell_info_ptr->vy = 0;
                 }
+                */
             }
             else {JSWARN<<" Not enough FNO features edensity, vx,vy ... to be used further in JETSCAPE !"; exit(-1);}
 
@@ -520,7 +616,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
     //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
     int ntau_root = (*m_xyt)[0][0].size();
     int m_ntau = bulk_info.ntau+1;
-    if (bulk_info.ntau>ntau_root) {
+    if (bulk_info.ntau>=ntau_root) {
         m_ntau = ntau_root;
         bulk_info.ntau = m_ntau;
     }
