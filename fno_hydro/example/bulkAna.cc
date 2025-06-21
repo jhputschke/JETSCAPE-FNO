@@ -64,8 +64,8 @@ int main(int argc, char** argv)
   //If you want to suppress it: use SetVerboseLevle(0) or max  SetVerboseLevle(9) or 10
   JetScapeLogger::Instance()->SetVerboseLevel(0);
 
-  TString fNameOut = "test_bulk_ana.root";
   string fNameIn = "test_out.dat";
+  TString fNameOut = "test_bulk_ana.root";
 
   if (argc > 1)
     fNameIn = argv[1];
@@ -76,10 +76,14 @@ int main(int argc, char** argv)
 
   TFile* file = new TFile(fNameOut, "RECREATE");
   TH1D* hPt = new TH1D("hPt", "Pt", 50, 0, 5); hPt->Sumw2();
-  TH1D *hPhi = new TH1D("hPhi","Phi",180,0,2*TMath::Pi());
-  TH1D *hEta = new TH1D("hEta","Eta",22,-1.1,1.1);
+  //TH1D *hPhi = new TH1D("hPhi","Phi",180,0,2*TMath::Pi());
+  TH1D *hPhi = new TH1D("hPhi","Phi",45,-TMath::Pi(),TMath::Pi());  hPhi->Sumw2();
+  TH1D *hEta = new TH1D("hEta","Eta",22,-1.1,1.1); hEta->Sumw2();
+  TH1D *hEtaFull = new TH1D("hEtaFull","Eta",40,-5,5); hEtaFull->Sumw2();
 
   auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
+
+  int nFullEvents = 0;
 
   while (!reader->Finished())
     {
@@ -88,16 +92,32 @@ int main(int argc, char** argv)
       cout<<"Analyze current event = "<<reader->GetCurrentEvent()<<endl;
       auto hadrons = reader->GetHadrons();
       cout<<"Number of hadrons is: " << hadrons.size() << endl;
+      if (hadrons.size()>0)
+        nFullEvents++;
+
       for (auto h : hadrons)
       {
         //cout<<h<<endl;
-        if (TMath::Abs(h->eta())<1) {
+        hEtaFull->Fill(h->eta());
+        if (TMath::Abs(h->eta())<10) {
             hEta->Fill(h->eta());
             hPt->Fill(h->pt());
-            hPhi->Fill(h->phi());
+            if (h->pt()>0.2)
+                hPhi->Fill(h->phi_std());
         }
       }
     }
+
+    cout<<"Number of full hadronization events = "<<nFullEvents<<endl;
+
+    //hPhi->Scale(1/(double) nFullEvents * 1/hPhi->GetBinWidth(1));
+    hEta->Scale(1/(double) nFullEvents * 1/hEta->GetBinWidth(1));
+    hPt->Scale(1/(double) nFullEvents * 1/hPt->GetBinWidth(1));
+
+    hPhi->Scale(1/(double) hPhi->GetEntries() * 1/hPhi->GetBinWidth(1));
+    //hEta->Scale(1/(double) hEta->GetEntries() * 1/hEta->GetBinWidth(1));
+    //hPt->Scale(1/(double) hPt->GetEntries() * 1/hPt->GetBinWidth(1));
+
 
     reader->Close();
     file->Write();

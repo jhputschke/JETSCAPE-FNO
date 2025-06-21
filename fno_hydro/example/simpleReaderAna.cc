@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 		if (k>0) break;
 	    cout<<"Anti-kT jet "<<k<<" : "<<jets[k]<<endl;
 		cout<<"Anti-kT jet "<<k<<" : "<<jets2[k]<<endl;
-		hdPt->Fill(jets[k].pt()-jets2[k].pt());
+		//hdPt->Fill(jets[k].pt()-jets2[k].pt());
 		}
 
 	  cout<<endl;
@@ -150,7 +150,7 @@ int main(int argc, char** argv)
           hM->Fill(hjets[k].m());
           hPtHydro->Fill(hjets2[k].pt());
           hMHydro->Fill(hjets2[k].m());
-          //hdPt->Fill(hjets[k].pt()-hjets2[k].pt());
+          hdPt->Fill(hjets[k].pt()-hjets2[k].pt());
       }
 
     }
