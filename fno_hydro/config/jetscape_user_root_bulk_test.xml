@@ -15,6 +15,7 @@
   <setReuseHydro> false </setReuseHydro>
   <nReuseHydro> 0 </nReuseHydro>
 
+  <outputFilename>test2.dat</outputFilename>
   <JetScapeWriterAscii> on </JetScapeWriterAscii>
 
   <write_pthat> 1 </write_pthat>
@@ -156,7 +157,7 @@
 
         <fullHydroIn> 0 </fullHydroIn>
         <bulkHadroFull> 1 </bulkHadroFull>
-        <QAoutput> 0 </QAoutput>
+        <QAoutput> 1 </QAoutput>
 
         <!-- Not really used yet ...  !!! -->
         <centrality-low>0</centrality-low>

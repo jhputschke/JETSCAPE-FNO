@@ -214,6 +214,8 @@ void FnoRooIn::EvolveHydro() {
 
   clear_up_evolution_data();
 
+  // Quick fix to get the test data part of the 10k training + test sample ... TBD ...
+  //t->GetEntry(9999-GetCurrentEvent());
   t->GetEntry(GetCurrentEvent());
 
   // ---------------------------------------------

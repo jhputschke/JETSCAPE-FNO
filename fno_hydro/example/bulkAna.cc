@@ -110,11 +110,11 @@ int main(int argc, char** argv)
 
     cout<<"Number of full hadronization events = "<<nFullEvents<<endl;
 
-    //hPhi->Scale(1/(double) nFullEvents * 1/hPhi->GetBinWidth(1));
+    hPhi->Scale(1/(double) nFullEvents * 1/hPhi->GetBinWidth(1));
     hEta->Scale(1/(double) nFullEvents * 1/hEta->GetBinWidth(1));
     hPt->Scale(1/(double) nFullEvents * 1/hPt->GetBinWidth(1));
 
-    hPhi->Scale(1/(double) hPhi->GetEntries() * 1/hPhi->GetBinWidth(1));
+    //hPhi->Scale(1/(double) hPhi->GetEntries() * 1/hPhi->GetBinWidth(1));
     //hEta->Scale(1/(double) hEta->GetEntries() * 1/hEta->GetBinWidth(1));
     //hPt->Scale(1/(double) hPt->GetEntries() * 1/hPt->GetBinWidth(1));
 
