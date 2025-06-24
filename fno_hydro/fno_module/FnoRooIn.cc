@@ -227,7 +227,7 @@ void FnoRooIn::EvolveHydro() {
 
   if (useEvent)
   {
-    //auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
     //DEBUG:
     //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
 
@@ -235,6 +235,11 @@ void FnoRooIn::EvolveHydro() {
 
     if (fullHydroIn)
     {
+        // ---------------------------------------------------------
+        //REMARK: Maybe do this directly in the SetHydroGridInfo!!!!
+        // ---------------------------------------------------------
+        bulk_info.ntau = bulk_info.ntau+1;
+
         PassHydroEvolutionHistoryToFrameworkFromRoot();
     }
     else
@@ -243,15 +248,16 @@ void FnoRooIn::EvolveHydro() {
         PassHydroEvolutionHistoryToFramework();
     }
 
-    //auto end = std::chrono::high_resolution_clock::now();
-    //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 
     JSINFO << "number of fluid cells received by the JETSCAPE: "
                 << bulk_info.data.size();
 
     //DEBUG for now only ...
-    //Save3dHist(); //Print2dHist();
+    //Save3dHist();
+    Print2dHist();
     // ---------------------------------------------
 
     if (bulkHadroFull) {
@@ -386,6 +392,11 @@ void FnoRooIn:: GetFnoPrediction()
         }
         JSINFO << tensorShapeInput.c_str();
 
+        // ---------------------------------------------------------
+        //REMARK: Maybe do this directly in the SetHydroGridInfo!!!!
+        // ---------------------------------------------------------
+        bulk_info.ntau = bulk_info.ntau+1;
+
         for(auto t : inputs)
             t.toTensor().reset();
         inputs.clear();
@@ -423,7 +434,8 @@ void FnoRooIn::SetElossSeedsToCurrentEventNumber()
 // --------------------------------------------------------
 // --------------------------------------------------------
 //DEBUG only for now ... needs more work to generalize ...
-
+// only if bulkHadroFull = True! Fix later !!!
+//
 void FnoRooIn::Fill3dHist(TH3F* h3d, TH3F* h3dOrg)
 {
     for (int k=0; k<(*m_xyt)[0][0].size();k++) {
@@ -458,7 +470,7 @@ void FnoRooIn::Save3dHist()
     delete hFno; delete hHydro;
 }
 
-void FnoRooIn::Fill2dHist(TH2F* h2d, int ntau)
+void FnoRooIn::Fill2dHist(TH2F* h2d, TH2F* h2dOrg, int ntau)
 {
     for (int i=0; i<(bulk_info.nx); i++){
         for (int j=-0; j<(bulk_info.ny); j++){
@@ -467,6 +479,7 @@ void FnoRooIn::Fill2dHist(TH2F* h2d, int ntau)
         auto mCell = bulk_info.data.at(nIndex);
 
         h2d->SetBinContent(i,j,(float) (mCell.energy_density));
+        h2dOrg->SetBinContent(i,j,(float) (*m_xyt)[i][j][ntau][0]);
 
         }
     }
@@ -475,22 +488,54 @@ void FnoRooIn::Fill2dHist(TH2F* h2d, int ntau)
 void FnoRooIn::Print2dHist()
 {
     TH2F *hIn=new TH2F("hIn","hIn",60,0,60,60,0,60);
-    TH2F *h25=new TH2F("h25","h25",60,0,60,60,0,60);
+    TH2F *hMax=new TH2F("hMax","hMax",60,0,60,60,0,60);
+    TH2F *hInOrg=new TH2F("hInOrg","hIn Hydro",60,0,60,60,0,60);
+    TH2F *hMaxOrg=new TH2F("hMaxOrg","hMax Hydro",60,0,60,60,0,60);
 
-    Fill2dHist(hIn,0);
-    Fill2dHist(h25,(*m_xyt)[0][0].size());
+    Fill2dHist(hIn,hInOrg,10);
+    int maxNtau = bulk_info.ntau-1;
+    if (bulkHadroFull)
+        maxNtau = (*m_xyt)[0][0].size()-1;
 
-    TCanvas *c1 = new TCanvas("c1", "Canvas", 800, 600);
+
+    //DEBUG:
+    cout<<bulk_info.ntau<<" "<<maxNtau<<" "<<(*m_xyt)[0][0].size()<<endl;
+
+    Fill2dHist(hMax,hMaxOrg,maxNtau);
+
+    TCanvas *c1 = new TCanvas("c1", "Canvas", 1000, 800);
+    c1->Divide(3,2);
+    c1->cd(1);
     hIn->SetStats(0);
+    hIn->DrawCopy("colz");
+    c1->cd(2);
+    hInOrg->SetStats(0);
+    hInOrg->Draw("colz");
+    c1->cd(3);
+    gPad->SetLeftMargin(0.0);
+    gPad->SetRightMargin(0.25);
+    hIn->Add(hInOrg,-1);
+    hIn->SetTitle("FNO-Hydro nTau=10");
     hIn->Draw("colz");
-    c1->SaveAs("hIn.gif");
+    c1->cd(4);
+    hMax->SetStats(0);
+    hMax->DrawCopy("colz");
+    c1->cd(5);
+    hMaxOrg->SetStats(0);
+    hMaxOrg->Draw("colz");
+    c1->cd(6);
+    gPad->SetLeftMargin(0.0);
+    gPad->SetRightMargin(0.25);
+    hMax->SetTitle("FNO-Hydro");
+    hMax->Add(hMaxOrg,-1);
+    hMax->Draw("colz");
 
-    TCanvas *c2 = new TCanvas("c2", "Canvas", 800, 600);
-    h25->SetStats(0);
-    h25->Draw("colz");
-    c2->SaveAs("h25.gif");
+    string currentEv = std::to_string(GetCurrentEvent());
+    string gifOut = "h2d_ednsity_"; gifOut += currentEv; gifOut += ".gif";
+    c1->SaveAs(gifOut.c_str());
 
-    delete hIn; delete h25; delete c1; delete c2;
+    delete hInOrg; delete hMaxOrg;
+    delete hIn; delete hMax; delete c1;
 
 
 }
@@ -535,12 +580,12 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
       tensorShapeInput += std::to_string(shape[i]) ; tensorShapeInput += " ";
     }
   //std::cout<< tensorShapeInput.c_str() << std::endl;
-  JSINFO << tensorShapeInput.c_str();
+  JSINFO << tensorShapeInput.c_str() <<" with bulkInfo nTau = "<<bulk_info.ntau;
 
   //Tremendous speed up !!!
   auto accessor = flattened_tensor.accessor<float, 4>();
 
-  for (int k=0;k<bulk_info.ntau+1;k++)
+  for (int k=0;k<bulk_info.ntau;k++)
     for (int i=0;i<bulk_info.nx;i++)
         for (int j=0;j<bulk_info.ny;j++)
         {
@@ -606,20 +651,21 @@ void FnoRooIn::PassHydroEvolutionHistoryToFramework() {
 
 void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
 {
-    JSINFO << "Passing hydro evolution information to JETSCAPE from ROOT file ... ";
+    JSINFO << "Passing hydro evolution information to JETSCAPE from ROOT file : bulkInfo nTau = "<<bulk_info.ntau<<" and ROOT file nTau(Max) = "<<(*m_xyt)[0][0].size();
 
     //===========================================================================
     // REMARK: +1 or not depending on max ntau or ntau from FNO < max ... fix!!!
     //===========================================================================
 
-    //DEBUG:
-    //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
     int ntau_root = (*m_xyt)[0][0].size();
-    int m_ntau = bulk_info.ntau+1;
+    int m_ntau = bulk_info.ntau;
     if (bulk_info.ntau>=ntau_root) {
         m_ntau = ntau_root;
         bulk_info.ntau = m_ntau;
     }
+
+    //DEBUG:
+    cout<<bulk_info.ntau<<" "<<m_ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
 
     //REMARK: Shortcut for using the full stored hydro information ...
     //        (write seperate module for just reading in ROOT file to decouple FNO validation)

@@ -85,7 +85,7 @@ private:
   void GetFnoPrediction();
   bool CheckEventForFullHadro();
 
-  void Fill2dHist(TH2F* h2d, int ntau);
+  void Fill2dHist(TH2F* h2d, TH2F* h2dOrg, int ntau);
   //void Fill3dHist(TH3F* h3d);
   void Fill3dHist(TH3F* h3d, TH3F* h3dOrg);
   void Print2dHist();
