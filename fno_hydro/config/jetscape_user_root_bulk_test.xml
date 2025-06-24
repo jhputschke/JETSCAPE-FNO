@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 10 </nEvents>
+  <nEvents> 2 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -123,6 +123,7 @@
         <model_file
             >../fno_hydro/models/traced_JS3.7_1k_3feat_fno_model_cpu_49bins.pt</model_file>
 
+        <!-- Not really used yet ...  !!! -->
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
@@ -144,8 +145,8 @@
 
       <FNOROOIN>
         <model_file
-            >../fno_hydro/models/traced_JS3.7_1k_3feat_fno_model_cpu_49bins.pt</model_file>
-        <!-- <model_file
+            >../fno_hydro/models/traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt</model_file>
+        <!-- <model_file traced_JS3.7_1k_3feat_fno_model_cpu_49bins.pt
             >../fno_hydro/models/traced_JS3.7.fno_model_cpu.pt</model_file> -->
         <root_file
             > /Users/du8478/FNO_Hydro_Data/cent_40_60_10K_events.root </root_file>
@@ -155,7 +156,9 @@
 
         <fullHydroIn> 0 </fullHydroIn>
         <bulkHadroFull> 1 </bulkHadroFull>
+        <QAoutput> 0 </QAoutput>
 
+        <!-- Not really used yet ...  !!! -->
         <centrality-low>0</centrality-low>
         <centrality-high>10</centrality-high>
         <EOS_id_MUSIC>91</EOS_id_MUSIC>
@@ -166,7 +169,7 @@
         <nx>60</nx>
         <ny>60</ny>
         <neta>1</neta>
-        <ntau>49</ntau>
+        <ntau>59</ntau>
         <x_min>-15.0</x_min>
         <y_min>-15.0</y_min>
          <!-- <dx>0.5</dx>

@@ -88,6 +88,7 @@ FnoRooIn::FnoRooIn() : device({}) {
 
   fullHydroIn = false;
   bulkHadroFull = false;
+  QAoutput = false;
   //device = torch::Device({});
   //has_source_terms = false;
   SetId("FnoRooIn");
@@ -129,6 +130,7 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
   fullHydroIn = GetXMLElementInt({"Hydro", "FNOROOIN", "fullHydroIn"});
   bulkHadroFull = GetXMLElementInt({"Hydro", "FNOROOIN", "bulkHadroFull"});
+  QAoutput = GetXMLElementInt({"Hydro", "FNOROOIN", "QAoutput"});
 
   if (fullHydroIn) {
     JSINFO << "Full hydro input is used ...";
@@ -227,7 +229,7 @@ void FnoRooIn::EvolveHydro() {
 
   if (useEvent)
   {
-    auto start = std::chrono::high_resolution_clock::now();
+    //auto start = std::chrono::high_resolution_clock::now();
     //DEBUG:
     //cout<<bulk_info.ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
 
@@ -248,16 +250,18 @@ void FnoRooIn::EvolveHydro() {
         PassHydroEvolutionHistoryToFramework();
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+    //auto end = std::chrono::high_resolution_clock::now();
+    //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 
     JSINFO << "number of fluid cells received by the JETSCAPE: "
                 << bulk_info.data.size();
 
-    //DEBUG for now only ...
-    //Save3dHist();
-    Print2dHist();
+    if (QAoutput) {
+        //Save3dHist();
+        Print2dHist();
+    }
+
     // ---------------------------------------------
 
     if (bulkHadroFull) {

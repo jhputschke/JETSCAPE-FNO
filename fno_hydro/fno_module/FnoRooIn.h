@@ -63,6 +63,7 @@ private:
   int n_features;
   bool fullHydroIn;
   bool bulkHadroFull;
+  bool QAoutput;
 
   TFile *f;
   TTree *t;

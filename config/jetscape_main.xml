@@ -457,6 +457,7 @@ off
 
       <fullHydroIn> 0 </fullHydroIn>
       <bulkHadroFull> 0 </bulkHadroFull>
+      <QAoutput> 0 </QAoutput>
 
       <centrality-low>0</centrality-low>
       <centrality-high>10</centrality-high>
