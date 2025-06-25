@@ -41,6 +41,8 @@ target_link_libraries(fnoRooInTest FnoModule ${ROOT_LIBRARIES})
 add_executable(BulkFnoRooIn ./BulkFnoRooIn.cc)
 target_link_libraries(BulkFnoRooIn FnoModule ${ROOT_LIBRARIES})
 
+add_executable(JetFnoRooIn ./JetFnoRooIn.cc)
+target_link_libraries(JetFnoRooIn FnoModule ${ROOT_LIBRARIES})
 
 add_executable(simpleReaderAna ./simpleReaderAna.cc)
 target_link_libraries(simpleReaderAna JetScape ${ROOT_LIBRARIES})

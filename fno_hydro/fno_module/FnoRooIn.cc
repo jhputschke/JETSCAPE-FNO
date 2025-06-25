@@ -671,7 +671,7 @@ void FnoRooIn::PassHydroEvolutionHistoryToFrameworkFromRoot()
     }
 
     //DEBUG:
-    cout<<bulk_info.ntau<<" "<<m_ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
+    //cout<<bulk_info.ntau<<" "<<m_ntau<<" "<<(*m_xyt)[0][0].size()<<endl;
 
     //REMARK: Shortcut for using the full stored hydro information ...
     //        (write seperate module for just reading in ROOT file to decouple FNO validation)
