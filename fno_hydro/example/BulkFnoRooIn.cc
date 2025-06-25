@@ -35,24 +35,8 @@
 
 
 // User modules derived from jetscape framework clasess
-#include "TrentoInitial.h"
-#include "AdSCFT.h"
-#include "Matter.h"
-#include "LBT.h"
-#include "Martini.h"
-#include "Brick.h"
-#include "GubserHydro.h"
-//#include "MusicWrapper.h"
-#include "PythiaGun.h"
 #include "iSpectraSamplerWrapper.h"
-#include "TrentoInitial.h"
 #include "NullPreDynamics.h"
-#include "PGun.h"
-#include "HadronizationManager.h"
-#include "Hadronization.h"
-#include "ColoredHadronization.h"
-#include "ColorlessHadronization.h"
-//#include "HydroFromFile.h"
 #include "FnoRooIn.h"
 
 #include <chrono>
