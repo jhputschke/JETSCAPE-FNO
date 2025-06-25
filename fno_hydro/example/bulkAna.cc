@@ -80,6 +80,7 @@ int main(int argc, char** argv)
   TH1D *hPhi = new TH1D("hPhi","Phi",45,-TMath::Pi(),TMath::Pi());  hPhi->Sumw2();
   TH1D *hEta = new TH1D("hEta","Eta",22,-1.1,1.1); hEta->Sumw2();
   TH1D *hEtaFull = new TH1D("hEtaFull","Eta",40,-5,5); hEtaFull->Sumw2();
+  TH1D *hMult = new TH1D("hMult","Mult |eta|<1",200,0,200);
 
   auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
 
@@ -88,6 +89,7 @@ int main(int argc, char** argv)
   while (!reader->Finished())
     {
       reader->Next();
+      int evMult = 0;
 
       cout<<"Analyze current event = "<<reader->GetCurrentEvent()<<endl;
       auto hadrons = reader->GetHadrons();
@@ -99,6 +101,9 @@ int main(int argc, char** argv)
       {
         //cout<<h<<endl;
         hEtaFull->Fill(h->eta());
+        if (TMath::Abs(h->eta())<1)
+            evMult++;
+
         if (TMath::Abs(h->eta())<10) {
             hEta->Fill(h->eta());
             hPt->Fill(h->pt());
@@ -106,6 +111,7 @@ int main(int argc, char** argv)
                 hPhi->Fill(h->phi_std());
         }
       }
+      hMult->Fill(evMult);
     }
 
     cout<<"Number of full hadronization events = "<<nFullEvents<<endl;
