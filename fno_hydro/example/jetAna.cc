@@ -78,6 +78,10 @@ int main(int argc, char** argv)
   TH1D* hPt = new TH1D("hPt", "Jet Pt (hadronic)", 60, 0, 60); hPt->Sumw2();
   TH1D* hPtP = new TH1D("hPtP", "Jet Pt (partonic)", 60, 0, 60); hPtP->Sumw2();
   TH1D* hM = new TH1D("hM", "Jet M (hadronic)", 48, 0, 12); hM->Sumw2();
+  TH1D* hz = new TH1D("hz","FF (hadronic)",20,0,1); hz->Sumw2();
+  TH1D* hzP = new TH1D("hzP","FF (partonic)",20,0,1); hzP->Sumw2();
+  TH1D* hzIP = new TH1D("hzIP","FF (hadronic) with pT shower IP",20,0,1); hzIP->Sumw2();
+  TH1D* hzPIP = new TH1D("hzPIP","FF (partonic) with pT shower IP",20,0,1); hzIP->Sumw2();
 
   fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, 0.7);
 
@@ -85,6 +89,9 @@ int main(int argc, char** argv)
 
   auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
   //auto reader=make_shared<JetScapeReaderAsciiGZ>("test_out.dat.gz");
+
+  int nHadroJets = 0;
+  int nParJets = 0;
 
   while (!reader->Finished())
     {
@@ -106,6 +113,13 @@ int main(int argc, char** argv)
 			if (k>0) break;
 	        cout<<"Anti-kT jet "<<k<<" : "<<jets[k]<<endl;
 			hPtP->Fill(jets[k].pt());
+		    auto cons = jets[k].constituents();
+            //cout<<cons.size()<<endl;
+            for (auto c : cons) {
+              hzP->Fill(c.pt()/jets[k].pt());
+              hzPIP->Fill(c.pt()/mShowers[0]->GetPartonAt(0)->pt());
+            }
+			nParJets++;
 		}
 
       auto hadrons = reader->GetHadrons();
@@ -120,9 +134,25 @@ int main(int argc, char** argv)
           cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;
           hPt->Fill(hjets[k].pt());
           hM->Fill(hjets[k].m());
+          auto cons = hjets[k].constituents();
+          //cout<<cons.size()<<endl;
+          for (auto c : cons) {
+            hz->Fill(c.pt()/hjets[k].pt());
+            hzIP->Fill(c.pt()/mShowers[0]->GetPartonAt(0)->pt());
+          }
+
+          nHadroJets++;
       }
 
     }
+
+    hz->Scale(1/(double) nHadroJets); hzIP->Scale(1/(double) nHadroJets);
+    hzP->Scale(1/(double) nParJets); hzPIP->Scale(1/(double) nParJets);
+
+    cout<<endl;
+    cout<<"# Hadronic jets = "<<nHadroJets<<endl;
+    cout<<"# Partonic jets = "<<nParJets<<endl;
+    cout<<endl;
 
     reader->Close();
     file->Write();
