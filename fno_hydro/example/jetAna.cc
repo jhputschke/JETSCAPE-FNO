@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   TH1D* hz = new TH1D("hz","FF (hadronic)",20,0,1); hz->Sumw2();
   TH1D* hzP = new TH1D("hzP","FF (partonic)",20,0,1); hzP->Sumw2();
   TH1D* hzIP = new TH1D("hzIP","FF (hadronic) with pT shower IP",20,0,1); hzIP->Sumw2();
-  TH1D* hzPIP = new TH1D("hzPIP","FF (partonic) with pT shower IP",20,0,1); hzIP->Sumw2();
+  TH1D* hzPIP = new TH1D("hzPIP","FF (partonic) with pT shower IP",20,0,1); hzPIP->Sumw2();
 
   fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, 0.7);
 
