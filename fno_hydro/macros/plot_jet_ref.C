@@ -17,12 +17,16 @@ void plot_jet_ref(TString fFNO="./test_ana_jet_fno_val.root", TString fHydro="./
     hPtFno->SetMarkerColor(2);
     hPtFno->SetMarkerStyle(22);
     hPtFno->SetLineColor(2);
-    hPtHydro->SetMarkerStyle(23);
+    hPtHydro->SetMarkerStyle(29);
     hPtNull->SetMarkerStyle(24);
 
-    hPtFno->DrawCopy("");
+    hPtFno->Scale(1/(double) hPtFno->GetEntries());
+    hPtHydro->Scale(1/(double) hPtHydro->GetEntries());
+    hPtNull->Scale(1/(double) hPtNull->GetEntries());
+
+    hPtNull->DrawCopy("");
+    hPtFno->DrawCopy("same");
     hPtHydro->DrawCopy("same");
-    hPtNull->DrawCopy("same");
 
     TCanvas *c2 = new TCanvas("c2", "Canvas #2", 800, 600);
     hPtFno->Divide(hPtHydro);
@@ -32,8 +36,10 @@ void plot_jet_ref(TString fFNO="./test_ana_jet_fno_val.root", TString fHydro="./
     hzFno->SetMarkerColor(2);
     hzFno->SetMarkerStyle(22);
     hzFno->SetLineColor(2);
-    hzHydro->SetMarkerStyle(23);
+    hzHydro->SetMarkerStyle(29);
     hzNull->SetMarkerStyle(24);
+
+    hzFno->Rebin(2);hzHydro->Rebin(2);hzNull->Rebin(2);
 
     hzFno->DrawCopy("");
     hzHydro->DrawCopy("same");
@@ -42,6 +48,8 @@ void plot_jet_ref(TString fFNO="./test_ana_jet_fno_val.root", TString fHydro="./
     TCanvas *c4 = new TCanvas("c4", "Canvas #4", 800, 600);
     hzFno->Divide(hzHydro);
     hzFno->DrawCopy("");
+    hzHydro->Divide(hzNull);
+    hzHydro->DrawCopy("same");
 
 
 }
