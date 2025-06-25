@@ -46,7 +46,7 @@ project (libFnoModule)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "./lib")
 set(CMAKE_INSTALL_LIBDIR "./")
 
-set (SOURCES FnoHydro.cc FnoRooIn.cc)
+set (SOURCES FnoHydro.cc FnoRooIn.cc PGunFno.cc)
 
 #message(${TORCH_LIBRARIES})
 #message(${TORCH_INCLUDE_DIRS})

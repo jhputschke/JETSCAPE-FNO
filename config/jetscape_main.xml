@@ -128,6 +128,12 @@ off
       <parID>21</parID>
     </PGun>
 
+    <PGunFno>
+        <name>PGunFno</name>
+        <pT>20</pT>
+        <parID>21</parID>
+    </PGunFno>
+
     <!-- Pythia Gun -->
     <!-- Sensible defaults are set in the class. ptHat etc. get their own field -->
     <PythiaGun>

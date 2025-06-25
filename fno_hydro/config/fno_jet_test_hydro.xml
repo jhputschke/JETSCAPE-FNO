@@ -28,6 +28,12 @@
         <parID>21</parID>
     </PGun>
 
+    <PGunFno>
+        <name>PGunFno</name>
+        <pT>20</pT>
+        <parID>21</parID>
+    </PGunFno>
+
      <PythiaGun>
        <pTHatMin>20</pTHatMin>
        <pTHatMax>21</pTHatMax>

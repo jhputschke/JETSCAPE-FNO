@@ -54,6 +54,7 @@
 #include "ColorlessHadronization.h"
 //#include "HydroFromFile.h"
 #include "FnoRooIn.h"
+#include "PGunFno.h"
 
 #include <chrono>
 #include <thread>
@@ -104,7 +105,7 @@ int main(int argc, char** argv)
     //jetscape->SetNReuseHydro (0);
 
     // Initial conditions and hydro
-    auto pGun= make_shared<PGun> ();
+    auto pGun= make_shared<PGunFno> ();
     auto pythiaGun= make_shared<PythiaGun> ();
     auto hydro = make_shared<FnoRooIn> ();
 
