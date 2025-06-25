@@ -49,3 +49,6 @@ target_link_libraries(simpleReaderAna JetScape ${ROOT_LIBRARIES})
 
 add_executable(bulkAna ./bulkAna.cc)
 target_link_libraries(bulkAna JetScape ${ROOT_LIBRARIES})
+
+add_executable(jetAna ./jetAna.cc)
+target_link_libraries(jetAna JetScape ${ROOT_LIBRARIES})
