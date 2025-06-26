@@ -64,6 +64,8 @@ private:
   bool fullHydroIn;
   bool bulkHadroFull;
   bool QAoutput;
+  bool doReuseHydro;
+  int nReuseHydro;
 
   TFile *f;
   TTree *t;

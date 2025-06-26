@@ -89,6 +89,8 @@ FnoRooIn::FnoRooIn() : device({}) {
   fullHydroIn = false;
   bulkHadroFull = false;
   QAoutput = false;
+  doReuseHydro = false;
+  nReuseHydro = 0;
   //device = torch::Device({});
   //has_source_terms = false;
   SetId("FnoRooIn");
@@ -201,6 +203,36 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
   int EOS_id_MUSIC = GetXMLElementInt({"Hydro", "FNOROOIN", "EOS_id_MUSIC"});
   JSINFO<<"Use EOS (Music id) = "<<EOS_id_MUSIC;
   fnoEOS=make_unique<EOS>(EOS_id_MUSIC);
+
+  int nRoot = t->GetEntries();
+  int nEv = GetXMLElementInt({"nEvents"});
+
+  std::string reuseHydro = GetXMLElementText({"setReuseHydro"});
+  if ((int)reuseHydro.find("true") >= 0) doReuseHydro = true;
+  if (doReuseHydro) {
+     nReuseHydro = GetXMLElementInt({"nReuseHydro"});
+
+     JSINFO<< "Asked for total number of events = "<<nEv;
+     JSINFO << "with do re-use hydro event with nReuseHydro = "<<nReuseHydro;
+     JSINFO << " --> adjust and check if compatible with number of events in ROOT file = "<<nRoot;
+
+     double mRatio = (double) nEv / (double) nReuseHydro / (double) nRoot;
+     if (mRatio<1) {
+         JSWARN<<"Not enough events in ROOT file, reduce nReuseHydro!!!";
+         exit(-1);
+     }
+
+     JSINFO << " --> Done. Fine. Moving on ...";
+
+  }
+  else
+  {
+      if (nEv>nRoot) {
+           JSWARN<<"Not enough events in ROOT file = "<<nRoot<<" but asked for total number of events = "<<nEv<<" ... reduce number of events!!!";
+           exit(-1);
+      }
+  }
+
 }
 
 void FnoRooIn::EvolveHydro() {
@@ -216,7 +248,14 @@ void FnoRooIn::EvolveHydro() {
 
   // Quick fix to get the test data part of the 10k training + test sample ... TBD ...
   //t->GetEntry(9999-GetCurrentEvent());
-  t->GetEntry(GetCurrentEvent());
+  if (!doReuseHydro) {
+    t->GetEntry(GetCurrentEvent());
+  }
+  else {
+     int getNumberOfRootEvent =  GetCurrentEvent()/(double) nReuseHydro;
+     //DEBUG: cout<<GetCurrentEvent()<<" "<<nReuseHydro<<" "<<getNumberOfRootEvent<<endl;
+     t->GetEntry(getNumberOfRootEvent);
+  }
 
   // ---------------------------------------------
 
@@ -285,7 +324,8 @@ void FnoRooIn::EvolveHydro() {
 
   // ---------------------------------------------
 
-  SetElossSeedsToCurrentEventNumber();
+  //REMARK: Maybe not needed at all ... TBD ...
+  //SetElossSeedsToCurrentEventNumber();
 
 }
 
