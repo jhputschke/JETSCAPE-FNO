@@ -82,6 +82,8 @@ int main(int argc, char** argv)
   TH1D* hzP = new TH1D("hzP","FF (partonic)",20,0,1); hzP->Sumw2();
   TH1D* hzIP = new TH1D("hzIP","FF (hadronic) with pT shower IP",20,0,1); hzIP->Sumw2();
   TH1D* hzPIP = new TH1D("hzPIP","FF (partonic) with pT shower IP",20,0,1); hzPIP->Sumw2();
+  TH1D* hEta = new TH1D("hEta","Eta Jet (hadronic)",40,-2,2); hEta->Sumw2();
+  TH1D *hPhi = new TH1D("hPhi","Phi Jet (hadronic)",45,0,2*TMath::Pi());  hPhi->Sumw2();
 
   fjcore::JetDefinition jet_def(fjcore::antikt_algorithm, 0.7);
 
@@ -102,6 +104,8 @@ int main(int argc, char** argv)
       cout<<"Analyze current event = "<<reader->GetCurrentEvent()<<endl;
       mShowers=reader->GetPartonShowers();
 
+      cout<<"Number of shower initiating partons = "<<mShowers.size()<<endl;
+
       cout<<"Shower initiating parton : "<<*(mShowers[0]->GetPartonAt(0))<<endl;
       cout<<"Number of Partons is: "<<mShowers[0]->GetFinalPartonsForFastJet().size()<< endl;
 
@@ -112,14 +116,18 @@ int main(int argc, char** argv)
 	  for (int k=0;k<jets.size();k++) {
 			if (k>0) break;
 	        cout<<"Anti-kT jet "<<k<<" : "<<jets[k]<<endl;
+
 			hPtP->Fill(jets[k].pt());
-		    auto cons = jets[k].constituents();
+
+			// ----
+			auto cons = jets[k].constituents();
             //cout<<cons.size()<<endl;
             for (auto c : cons) {
               hzP->Fill(c.pt()/jets[k].pt());
               hzPIP->Fill(c.pt()/mShowers[0]->GetPartonAt(0)->pt());
             }
-			nParJets++;
+
+            nParJets++;
 		}
 
       auto hadrons = reader->GetHadrons();
@@ -132,8 +140,13 @@ int main(int argc, char** argv)
       for (int k=0;k<hjets.size();k++) {
           if (k>0) break;
           cout<<"Anti-kT jet "<<k<<" : "<<hjets[k]<<endl;
+
           hPt->Fill(hjets[k].pt());
           hM->Fill(hjets[k].m());
+          hEta->Fill(hjets[k].eta());
+          hPhi->Fill(hjets[k].phi());
+
+          // ----
           auto cons = hjets[k].constituents();
           //cout<<cons.size()<<endl;
           for (auto c : cons) {

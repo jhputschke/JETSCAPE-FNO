@@ -80,7 +80,7 @@ void PGunFno::Exec() {
 
   phi = 2.0 * PI * (rand() / maxN);
   rapidity = 0; //2.0*eta_cut*(rand()/maxN)-eta_cut;
-  phi = 0.0;
+  //phi = 0.0;
 
   p[1] = pT * cos(phi);
   p[2] = pT * sin(phi);
