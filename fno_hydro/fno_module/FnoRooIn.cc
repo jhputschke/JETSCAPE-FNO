@@ -214,13 +214,14 @@ void FnoRooIn::InitializeHydro(Parameter parameter_list) {
 
      JSINFO<< "Asked for total number of events = "<<nEv;
      JSINFO << "with do re-use hydro event with nReuseHydro = "<<nReuseHydro;
+     JSINFO << " --> number of effective events needed = "<<(int) (nEv/(double) nReuseHydro);
      JSINFO << " --> adjust and check if compatible with number of events in ROOT file = "<<nRoot;
 
-     double mRatio = (double) nEv / (double) nReuseHydro / (double) nRoot;
-     if (mRatio<1) {
+     int nEvEff = (double) nEv / (double) nReuseHydro;
+     if (nEvEff>nRoot) {
          JSWARN<<"Not enough events in ROOT file, reduce nReuseHydro!!!";
          exit(-1);
-     }
+        }
 
      JSINFO << " --> Done. Fine. Moving on ...";
 
