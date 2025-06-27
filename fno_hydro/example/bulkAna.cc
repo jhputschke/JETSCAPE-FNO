@@ -76,8 +76,10 @@ int main(int argc, char** argv)
 
   TFile* file = new TFile(fNameOut, "RECREATE");
   TH1D* hPt = new TH1D("hPt", "Pt", 50, 0, 5); hPt->Sumw2();
+  TH1D* hPtMid = new TH1D("hPtMid", "PtMid", 50, 0, 5); hPtMid->Sumw2();
   //TH1D *hPhi = new TH1D("hPhi","Phi",180,0,2*TMath::Pi());
   TH1D *hPhi = new TH1D("hPhi","Phi",45,-TMath::Pi(),TMath::Pi());  hPhi->Sumw2();
+  TH1D *hPhiMid = new TH1D("hPhiMid","PhiMid",45,-TMath::Pi(),TMath::Pi());  hPhiMid->Sumw2();
   TH1D *hEta = new TH1D("hEta","Eta",22,-1.1,1.1); hEta->Sumw2();
   TH1D *hEtaFull = new TH1D("hEtaFull","Eta",40,-5,5); hEtaFull->Sumw2();
   TH1D *hMult = new TH1D("hMult","Mult |eta|<1",200,0,200);
@@ -102,14 +104,17 @@ int main(int argc, char** argv)
       {
         //cout<<h<<endl;
         hEtaFull->Fill(h->eta());
-        if (TMath::Abs(h->eta())<1)
+        if (TMath::Abs(h->eta())<1) {
+            hPhiMid->Fill(h->phi_std());
+            hPtMid->Fill(h->pt());
             evMult++;
+        }
 
         if (TMath::Abs(h->eta())<10) {
             hEta->Fill(h->eta());
             hPt->Fill(h->pt());
-            if (h->pt()>0.2)
-                hPhi->Fill(h->phi_std());
+            //if (h->pt()>0.2)
+            hPhi->Fill(h->phi_std());
         }
       }
       hMult->Fill(evMult);
@@ -118,8 +123,10 @@ int main(int argc, char** argv)
     cout<<"Number of full hadronization events = "<<nFullEvents<<endl;
 
     hPhi->Scale(1/(double) nFullEvents * 1/hPhi->GetBinWidth(1));
+    hPhiMid->Scale(1/(double) nFullEvents * 1/hPhi->GetBinWidth(1));
     hEta->Scale(1/(double) nFullEvents * 1/hEta->GetBinWidth(1));
     hPt->Scale(1/(double) nFullEvents * 1/hPt->GetBinWidth(1));
+    hPtMid->Scale(1/(double) nFullEvents * 1/hPtMid->GetBinWidth(1));
 
     //hPhi->Scale(1/(double) hPhi->GetEntries() * 1/hPhi->GetBinWidth(1));
     //hEta->Scale(1/(double) hEta->GetEntries() * 1/hEta->GetBinWidth(1));

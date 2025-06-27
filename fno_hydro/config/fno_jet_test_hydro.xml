@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 10000 </nEvents>
+  <nEvents> 20000 </nEvents>
 
   <Random>
     <seed>1</seed>

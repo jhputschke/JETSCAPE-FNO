@@ -7,6 +7,8 @@ void plot_bulk(TString fFNO="./test_ana_bulk_fno_2k.root", TString fHydro="./tes
 
     auto hPhiFno = (TH1D*) fF->Get("hPhi");
     auto hPhiHydro = (TH1D*) fH->Get("hPhi");
+    auto hPhiFnoMid = (TH1D*) fF->Get("hPhiMid");
+    auto hPhiHydroMid = (TH1D*) fH->Get("hPhiMid");
     //hPhiFno->Rebin(3);hPhiHydro->Rebin(3);
 
     auto hPtFno = (TH1D*) fF->Get("hPt");
@@ -53,4 +55,13 @@ void plot_bulk(TString fFNO="./test_ana_bulk_fno_2k.root", TString fHydro="./tes
 
     hPhiFnoFit->DrawCopy("");
     hPhiHydroFit->DrawCopy("same");
+
+    TCanvas *c6 = new TCanvas("c6", "Canvas #6", 800, 600);
+    hPhiFnoMid->SetMarkerColor(2);
+    hPhiFnoMid->SetMarkerStyle(22);
+    hPhiFnoMid->SetLineColor(2);
+    hPhiHydroMid->SetMarkerStyle(26);
+
+    hPhiFnoMid->DrawCopy();
+    hPhiHydroMid->DrawCopy("same");
 }
