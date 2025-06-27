@@ -87,8 +87,8 @@ int main(int argc, char** argv)
 
   vector<shared_ptr<PartonShower>> mShowers;
 
-  auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
-  //auto reader=make_shared<JetScapeReaderAsciiGZ>("test_out.dat.gz");
+  auto reader=make_shared<JetScapeReaderAsciiGZ>(fNameIn);
+  //auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
 
   int nHadroJets = 0;
   int nParJets = 0;

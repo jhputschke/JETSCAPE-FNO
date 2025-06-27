@@ -71,7 +71,7 @@ int main(int argc, char** argv)
     //If you want to suppress it: use SetVerboseLevle(0) or max  SetVerboseLevle(9) or 10
     JetScapeLogger::Instance()->SetVerboseLevel(0);
 
-    string fName="test_jet_out.dat";
+    string fName="test_jet_out.dat.gz";
     bool roofileIn = false;
     if (argc > 1)
       roofileIn = atoi(argv[1]);
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     hadroMgr->Add(hadro);
     jetscape->Add(hadroMgr);
 
-    auto writer= make_shared<JetScapeWriterAscii> (fName);
+    auto writer= make_shared<JetScapeWriterAsciiGZ> (fName);
     jetscape->Add(writer);
 
 

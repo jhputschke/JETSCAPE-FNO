@@ -1,4 +1,4 @@
-void plot_bulk(TString fFNO="./test_ana_fno_val.root", TString fHydro="./test_ana_hydro_val.root")
+void plot_bulk(TString fFNO="./test_ana_bulk_fno_2k.root", TString fHydro="./test_ana_bulk_hydro_2k.root")
 {
     gStyle->SetOptStat(0);
 

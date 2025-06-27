@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     JetScapeLogger::Instance()->SetRemark(false);
     JetScapeLogger::Instance()->SetVerboseLevel(0);
 
-    string fName="test_bulk_out.dat";
+    string fName="test_bulk_out.dat.gz";
     bool roofileIn = false;
     if (argc > 1)
       roofileIn = atoi(argv[1]);
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
     auto iSS = make_shared<iSpectraSamplerWrapper> ();
     jetscape->Add(iSS);
 
-    auto writer= make_shared<JetScapeWriterAscii>(fName);
+    auto writer= make_shared<JetScapeWriterAsciiGZ>(fName);
     jetscape->Add(writer);
 
 

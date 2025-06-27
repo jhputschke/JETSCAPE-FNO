@@ -29,6 +29,8 @@ void plot_jet(TString fFNO="./test_ana_jet_fno_val.root", TString fHydro="./test
     hzFno->SetLineColor(2);
     hzHydro->SetMarkerStyle(26);
 
+    hzFno->Rebin(2);hzHydro->Rebin(2);
+
     hzFno->DrawCopy("");
     hzHydro->DrawCopy("same");
 

@@ -21,4 +21,5 @@ external_packages/ipglasma
 fno_hydro/models
 fno_hydro/libtorch
 fno_hydro/libtorch/*
+fno_hydro/input_root
 *__cmake*

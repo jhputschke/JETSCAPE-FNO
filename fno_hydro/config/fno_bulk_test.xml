@@ -4,7 +4,7 @@
   <enableAutomaticTaskListDetermination
     > false </enableAutomaticTaskListDetermination>
 
-  <nEvents> 1000 </nEvents>
+  <nEvents> 2000 </nEvents>
 
   <Random>
     <seed>1</seed>
@@ -42,8 +42,7 @@
       <FNOROOIN>
         <model_file
             >../fno_hydro/models/traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt</model_file>
-        <root_file
-            > /Users/du8478/FNO_Hydro_Data/cent_40_60_10K_events.root </root_file>
+        <root_file> ../fno_hydro/input_root/sample2K_40_60.root </root_file>
 
         <fullHydroIn> 0 </fullHydroIn>
         <bulkHadroFull> 1 </bulkHadroFull>

@@ -82,7 +82,8 @@ int main(int argc, char** argv)
   TH1D *hEtaFull = new TH1D("hEtaFull","Eta",40,-5,5); hEtaFull->Sumw2();
   TH1D *hMult = new TH1D("hMult","Mult |eta|<1",200,0,200);
 
-  auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
+  auto reader=make_shared<JetScapeReaderAsciiGZ>(fNameIn);
+  //auto reader=make_shared<JetScapeReaderAscii>(fNameIn);
 
   int nFullEvents = 0;
 
