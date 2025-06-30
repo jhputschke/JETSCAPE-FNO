@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     auto lbt = make_shared<LBT> ();
 
     jloss->Add(matter);
-    //jloss->Add(lbt);
+    jloss->Add(lbt);
     jlossmanager->Add(jloss);
     jetscape->Add(jlossmanager);
 

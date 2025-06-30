@@ -77,7 +77,7 @@ int main(int argc, char** argv)
   TFile* file = new TFile(fNameOut, "RECREATE");
   TH1D* hPt = new TH1D("hPt", "Jet Pt (hadronic)", 60, 0, 60); hPt->Sumw2();
   TH1D* hPtP = new TH1D("hPtP", "Jet Pt (partonic)", 60, 0, 60); hPtP->Sumw2();
-  TH1D* hM = new TH1D("hM", "Jet M (hadronic)", 48, 0, 12); hM->Sumw2();
+  TH1D* hM = new TH1D("hM", "Jet M (hadronic)", 64, 0, 16); hM->Sumw2();
   TH1D* hz = new TH1D("hz","FF (hadronic)",20,0,1); hz->Sumw2();
   TH1D* hzP = new TH1D("hzP","FF (partonic)",20,0,1); hzP->Sumw2();
   TH1D* hzIP = new TH1D("hzIP","FF (hadronic) with pT shower IP",20,0,1); hzIP->Sumw2();
