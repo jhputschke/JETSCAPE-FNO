@@ -42,7 +42,7 @@
 #include "Martini.h"
 #include "Brick.h"
 #include "GubserHydro.h"
-//#include "MusicWrapper.h"
+#include "MusicWrapper.h"
 #include "PythiaGun.h"
 #include "iSpectraSamplerWrapper.h"
 #include "TrentoInitial.h"
@@ -93,7 +93,8 @@ int main(int argc, char** argv)
     auto trento = make_shared<TrentoInitial>();
     auto null_predynamics = make_shared<NullPreDynamics> ();
     auto pGun= make_shared<PGun> ();
-    auto hydro = make_shared<FnoHydro> ();
+    //auto hydro = make_shared<FnoHydro> ();
+    auto hydro = make_shared<MpiMusic> ();
 
     jetscape->Add(trento);
     jetscape->Add(null_predynamics);

@@ -42,7 +42,8 @@
       <FNOROOIN>
         <model_file
             >../fno_hydro/models/traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt</model_file>
-        <root_file> ../fno_hydro/input_root/sample2K_40_60.root </root_file>
+        <root_file
+            > ../fno_hydro/input_root/sample2K_40_60_nw9p6.root </root_file>
 
         <fullHydroIn> 1 </fullHydroIn>
         <bulkHadroFull> 1 </bulkHadroFull>
