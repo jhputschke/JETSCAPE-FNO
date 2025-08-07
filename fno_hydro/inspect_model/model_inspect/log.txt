@@ -1,0 +1,2 @@
+model input:     /home/davidstewart/FNO_JS3/junepub/train_models/etau/4types_500each/best_model_state_dict.pt 
+Input raw file:  /home/davidstewart/JETSCAPE/config/bulk_writer/sample100_0_10_nw9p6_flat_xy60_t60.root
