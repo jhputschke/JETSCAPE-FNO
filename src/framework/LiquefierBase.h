@@ -55,6 +55,7 @@ private:
   const Jetscape::real hydro_source_abs_err;
   bool threshold_energy_switch;
   double e_threshold;
+  bool ignore_causality { false }; // set true if wanted to add energy at arb. points for testing
 
 public:
   LiquefierBase();

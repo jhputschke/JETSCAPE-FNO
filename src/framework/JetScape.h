@@ -20,6 +20,7 @@
 #include "JetScapeTaskSupport.h"
 #include "JetScapeModuleBase.h"
 #include "CausalLiquefier.h"
+#include "GausLiquefier.h"
 
 namespace Jetscape {
 
@@ -96,7 +97,7 @@ protected:
   bool reuse_hydro_;
   unsigned int n_reuse_hydro_;
 
-  std::shared_ptr<CausalLiquefier> liquefier;
+  std::shared_ptr<GausLiquefier> liquefier;
 
   bool
       fEnableAutomaticTaskListDetermination; // Option to automatically determine the task list from the XML file,

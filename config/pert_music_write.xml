@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+
+<jetscape>
+
+    <Random>
+     <seed> 1 </seed>
+    </Random>
+
+  <nEvents> 1 </nEvents>
+  <setReuseHydro> true </setReuseHydro>
+  <nReuseHydro> 1 </nReuseHydro>
+  <vlevel> 0 </vlevel>
+
+  <!-- Jetscape Writer -->
+  <JetScapeWriterAscii> off </JetScapeWriterAscii>
+
+  <!-- Inital State Module  -->
+  <IS>
+    <grid_max_x> 15 </grid_max_x>
+    <grid_max_y> 15 </grid_max_y>
+    <grid_max_z> 0  </grid_max_z>
+    <grid_step_x> 0.3 </grid_step_x>
+    <grid_step_y> 0.3 </grid_step_y>
+    <grid_step_z> 0.2 </grid_step_z>
+    <Trento> </Trento>
+      <Trento>
+        <PhysicsInputs
+                projectile='Au'
+                target='Au'
+                sqrts='200'
+                cross-section='4.2'
+                normalization='5.73'
+            >
+        </PhysicsInputs>
+	<CutInputs centrality-low='0' centrality-high='10'>
+        </CutInputs>
+        <TransInputs
+                reduced-thickness='0.063'
+                fluctuation="1.05"
+                nucleon-width="1.12"
+                nucleon-min-dist="1.4"
+            >
+        </TransInputs>
+        <LongiInputs
+                mean-coeff="1.0"
+                std-coeff="3.0"
+                skew-coeff="0.0"
+                skew-type="1"
+                jacobian="0.8"
+            >
+        </LongiInputs>
+      </Trento>
+  </IS>
+
+  <!--Preequilibrium Dynamics Module -->
+  <Preequilibrium>
+     <tau0>0.0</tau0>
+    <NullPreDynamics> </NullPreDynamics>
+    <evolutionInMemory>0</evolutionInMemory>
+  </Preequilibrium>
+
+  <!-- Create liquefier -->
+  <Liquefier>
+      <GausLiquefier>
+          <sigma_xy>0.5</sigma_xy>
+          <sigma_tau>0.08</sigma_tau>
+          <droplets>{{0.5, 5, 5, 0},  {240,20,0,0}}, 
+                    {{0.5, -4, -4, 0},{150,10,10,0}}</droplets>
+      </GausLiquefier>
+      <!-- This option for if adding arb. energy to grid --> 
+      <ignore_causality> 1 </ignore_causality>
+  </Liquefier>
+
+  <!-- Hydro  Module -->
+  <Hydro>
+    <MUSIC>
+      <name>MUSIC</name>
+      <output_evolution_to_file>0</output_evolution_to_file>
+      <output_evolution_to_memory>1</output_evolution_to_memory>
+      <surface_in_memory>1</surface_in_memory>
+      <Initial_time_tau_0>0.5</Initial_time_tau_0>
+      <shear_viscosity_eta_over_s>0</shear_viscosity_eta_over_s>
+      <freezeout_temperature>0.136</freezeout_temperature>
+    </MUSIC>
+    <AddLiquefier> true </AddLiquefier>
+  </Hydro>
+
+  <!-- write out music -->
+  <RootBulkWriter>
+      <name> RootBulkWriter </name>
+      <ofilename> root_test.root </ofilename>
+      <!-- <ofilename> root_onenodroplet.root </ofilename> -->
+      <hydro_to_write> MUSIC </hydro_to_write>
+      <n_tau_steps> -1 </n_tau_steps> 
+      <min_dtau> 0.10 </min_dtau>
+      <navg_xy> 2 </navg_xy>
+      <ensure_MusicWrapper_output> 1 </ensure_MusicWrapper_output>
+  </RootBulkWriter>
+
+
+  <!-- Jet Hadronization Module -->
+  <JetHadronization>
+    <name>colorless</name>
+    <take_recoil>1</take_recoil>
+    <eCMforHadronization>2510</eCMforHadronization>
+  </JetHadronization>
+
+
+  <!-- Particlization Module  -->
+  <SoftParticlization>
+    <iSS> </iSS>
+  </SoftParticlization>
+
+</jetscape>

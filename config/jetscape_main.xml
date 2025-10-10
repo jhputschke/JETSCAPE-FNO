@@ -273,7 +273,7 @@
   </Preequilibrium>
 
 
-  <!-- Create liquifier -->
+  <!-- Create liquefier -->
   <Liquefier>
       <!--threshold_energy_switch = 1, use e_threshold; threshold_energy_switch = 0, use |e_threshold|*T-->
       <threshold_energy_switch>1</threshold_energy_switch>
@@ -291,6 +291,18 @@
           <d_diff>0.08</d_diff><!-- in [fm] -->
           <width_delta>0.1</width_delta><!-- in [fm] -->
       </CausalLiquefier>
+
+      <!-- GausLiquefier -->
+      <GausLiquefier>
+          <name>GausLiquefier</name>
+          <sigma_xy>0.1</sigma_xy>
+          <sigma_tau>0.05</sigma_tau>
+          <droplets> none </droplets>
+      </GausLiquefier>
+
+      <!-- This option for if adding arb. energy to grid --> 
+      <ignore_causality> 0 </ignore_causality>
+
   </Liquefier>
 
   <!-- Hydro  Module  -->
@@ -408,6 +420,18 @@
     </CLVisc>
 
   </Hydro>
+
+  <!-- RootBulkWriter -->
+  <RootBulkWriter>
+    <name> RootBulkWriter </name>
+    <ofilename> root_bulk.root </ofilename>
+    <n_tau_steps>120</n_tau_steps>
+    <hydro_to_write> MUSIC </hydro_to_write>
+    <min_dtau> 0.1 </min_dtau>
+    <navg_xy> 1 </navg_xy>
+    <ensure_MusicWrapper_output> 0 </ensure_MusicWrapper_output>
+  </RootBulkWriter>
+
 
   <!-- Jet Hadronization Module -->
    <JetHadronization>

@@ -60,7 +60,7 @@ TrentoInitial::TrentoInitial() : InitialState() { SetId("Trento"); }
 TrentoInitial::~TrentoInitial() = default;
 
 void TrentoInitial::InitTask() {
-  JSINFO << " Initialzie TRENTo initial condition ";
+  JSINFO << " Initialize TRENTo initial condition ";
 
   // TRENTO OPTION DESK
   using namespace trento;

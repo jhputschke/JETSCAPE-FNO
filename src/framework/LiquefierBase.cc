@@ -22,6 +22,8 @@ LiquefierBase::LiquefierBase()
     : hydro_source_abs_err(1e-10), drop_stat(-11), miss_stat(-13),
       neg_stat(-17) {
   GetHydroCellSignalConnected = false;
+  ignore_causality = (int)  JetScapeXML::Instance()->GetElementInt(
+          {"Liquefier", "ignore_causality"});
 }
 
 void LiquefierBase::get_source(Jetscape::real tau, Jetscape::real x,
@@ -31,10 +33,12 @@ void LiquefierBase::get_source(Jetscape::real tau, Jetscape::real x,
   for (const auto &drop_i : dropletlist) {
 
     const auto x_drop = drop_i.get_xmu();
-    double ds2 = tau * tau + x_drop[0] * x_drop[0] -
-                 2.0 * tau * x_drop[0] * cosh(eta - x_drop[3]) -
-                 (x - x_drop[1]) * (x - x_drop[1]) -
-                 (y - x_drop[2]) * (y - x_drop[2]);
+    double ds2 = ignore_causality ? 1 
+        : (tau * tau + x_drop[0] * x_drop[0] 
+            - 2.0 * tau * x_drop[0] * cosh(eta - x_drop[3]) 
+            - (x - x_drop[1]) * (x - x_drop[1]) 
+            - (y - x_drop[2]) * (y - x_drop[2])
+        );
 
     if (tau >= x_drop[0] && ds2 >= 0.0) {
       std::array<Jetscape::real, 4> jmu_i = {0.0, 0.0, 0.0, 0.0};

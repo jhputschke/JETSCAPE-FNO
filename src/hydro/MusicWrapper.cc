@@ -198,6 +198,9 @@ void MpiMusic::InitializeHydro(Parameter parameter_list) {
     music_hydro_ptr->set_parameter("surface_in_memory", 0);
   }
 
+  flag_ensure_MusicWrapper_output = (bool) GetXMLElementInt(
+          {"RootBulkWriter", "ensure_MusicWrapper_output"});
+
   music_hydro_ptr->add_hydro_source_terms(hydro_source_terms_ptr);
 }
 
@@ -257,8 +260,7 @@ void MpiMusic::EvolveHydro() {
     hydro_status = FINISHED;
   }
 
-  if (flag_output_evo_to_memory == 1) {
-    if (!has_source_terms) {
+  if (flag_output_evo_to_memory == 1 and !has_source_terms) {
       // only the first hydro without source term will be stored
       // in memory for jet energy loss calculations
       if (flag_preEq_output_evo_to_memory == 0)
@@ -268,8 +270,12 @@ void MpiMusic::EvolveHydro() {
 
       JSINFO << "number of fluid cells received by the JETSCAPE: "
              << bulk_info.data.size();
-    }
+  } else if (flag_ensure_MusicWrapper_output) {
+        PassHydroEvolutionHistoryToFramework();
+        JSINFO << "number of fluid cells received by the JETSCAPE: "
+               << bulk_info.data.size();
   }
+
 
   if (flag_output_evo_to_file == 1) {
     // add hydro_id to the hydro evolution filename

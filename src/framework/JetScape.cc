@@ -23,6 +23,8 @@
 #include "PreequilibriumDynamics.h"
 #include "JetEnergyLoss.h"
 #include "CausalLiquefier.h"
+#include "GausLiquefier.h"
+#include "RootBulkWriter.h"
 
 #ifdef USE_HEPMC
 #include "JetScapeWriterHepMC.h"
@@ -45,7 +47,7 @@ namespace Jetscape {
    */
 JetScape::JetScape()
     : JetScapeModuleBase(), n_events(1), n_events_printout(100), reuse_hydro_(false), n_reuse_hydro_(1),
-      liquefier(nullptr), fEnableAutomaticTaskListDetermination(true) {
+      liquefier(nullptr),  fEnableAutomaticTaskListDetermination(true) {
   VERBOSE(8);
   SetId("primary");
 }
@@ -214,7 +216,7 @@ void JetScape::DetermineTaskListFromXML() {
   while (elementXML) {
     std::string elementName = elementXML->Name();
     if (elementName == "Liquefier") {
-      liquefier = make_shared<CausalLiquefier>();
+      liquefier = make_shared<GausLiquefier>();
       JSINFO << "Created liquefier.";
     }
     elementXML = elementXML->NextSiblingElement();
@@ -534,6 +536,7 @@ void JetScape::DetermineTaskListFromXML() {
       }
     }
 
+
     // Eloss
     else if (elementName == "Eloss") {
 
@@ -761,9 +764,22 @@ void JetScape::DetermineTaskListFromXML() {
       }
     }
 
+    else if (elementName == "RootBulkWriter") {
+        auto rbwriter = JetScapeModuleFactory::createInstance("RootBulkWriter");
+        auto _this = new RootBulkWriter();
+
+        if (rbwriter) {
+            Add(rbwriter);
+            JSINFO << " JetScape::DetermineTaskList() -- RootBulkWriter";
+        }
+    }
+
+
     else {
       VERBOSE(2) << "Nothing to do.";
     }
+
+
 
     element = element->NextSiblingElement();
   }
