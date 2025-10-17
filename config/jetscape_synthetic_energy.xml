@@ -2,11 +2,14 @@
 
 <jetscape>
 
+  <!-- <enableAutomaticTaskListDetermination -->
+    <!-- > false </enableAutomaticTaskListDetermination> -->
+
     <Random>
      <seed> 1 </seed>
     </Random>
 
-  <nEvents> 1 </nEvents>
+  <nEvents> 2 </nEvents>
   <setReuseHydro> true </setReuseHydro>
   <nReuseHydro> 1 </nReuseHydro>
   <vlevel> 0 </vlevel>
@@ -19,10 +22,9 @@
     <grid_max_x> 15 </grid_max_x>
     <grid_max_y> 15 </grid_max_y>
     <grid_max_z> 0  </grid_max_z>
-    <grid_step_x> 0.3 </grid_step_x>
-    <grid_step_y> 0.3 </grid_step_y>
-    <grid_step_z> 0.2 </grid_step_z>
-    <Trento> </Trento>
+    <grid_step_x> 0.2 </grid_step_x>
+    <grid_step_y> 0.2 </grid_step_y>
+    <!-- <grid_step_z> 0.2 </grid_step_z> -->
       <Trento>
         <PhysicsInputs
                 projectile='Au'
@@ -52,9 +54,18 @@
       </Trento>
   </IS>
 
+  <!-- <!-1- Hard Process -1-> -->
+  <!-- <Hard> -->
+  <!--   <PythiaGun> -->
+  <!--     <pTHatMin>20</pTHatMin> -->
+  <!--     <pTHatMax>70</pTHatMax> -->
+  <!--     <eCM>200</eCM> -->
+  <!--   </PythiaGun> -->
+  <!-- </Hard> -->
+
   <!--Preequilibrium Dynamics Module -->
   <Preequilibrium>
-     <tau0>0.0</tau0>
+     <tau0>0.5</tau0>
     <NullPreDynamics> </NullPreDynamics>
     <evolutionInMemory>0</evolutionInMemory>
   </Preequilibrium>
@@ -63,9 +74,12 @@
   <Liquefier>
       <GausLiquefier>
           <sigma_xy>0.5</sigma_xy>
-          <sigma_tau>0.08</sigma_tau>
-          <droplets>{{0.5, 5, 5, 0},  {240,20,0,0}}, 
-                    {{0.5, -4, -4, 0},{150,10,10,0}}</droplets>
+          <sigma_tau>0.07</sigma_tau>
+          <!-- <droplets>{{0.5, 5, 5, 0},  {160,120,120,0}}, -->
+                    <!-- {{0.5, -8, -7, 0},  {240,100,100,0}}, --> 
+                    <!-- {{0.5, 10, 10, 0},{150,10,10,0}}</droplets> -->
+          <droplets>{{0.5, 6, 6, 0},  {10,50,50,0}}, 
+                    {{0.5, -3, -3, 0},{150,0,0,0}}</droplets>
       </GausLiquefier>
       <!-- This option for if adding arb. energy to grid --> 
       <ignore_causality> 1 </ignore_causality>
@@ -75,6 +89,7 @@
   <Hydro>
     <MUSIC>
       <name>MUSIC</name>
+      <beastMode>1</beastMode>
       <output_evolution_to_file>0</output_evolution_to_file>
       <output_evolution_to_memory>1</output_evolution_to_memory>
       <surface_in_memory>1</surface_in_memory>
@@ -85,15 +100,23 @@
     <AddLiquefier> true </AddLiquefier>
   </Hydro>
 
-  <!-- write out music -->
+  <!-- write oput music -->
   <RootBulkWriter>
       <name> RootBulkWriter </name>
-      <ofilename> root_test.root </ofilename>
-      <!-- <ofilename> root_onenodroplet.root </ofilename> -->
-      <hydro_to_write> MUSIC </hydro_to_write>
-      <n_tau_steps> -1 </n_tau_steps> 
-      <min_dtau> 0.10 </min_dtau>
-      <navg_xy> 2 </navg_xy>
+      <!-- <ofilename> root_test_nodroplets.root </ofilename> -->
+      <out_file_name> bulk.root </out_file_name>
+      <!-- If maxTau != 0: events are set to fixed size arrays for each event,
+           with data either truncated before freezeout, or padded with zeros after
+           freezeout out to maxTau 
+           If maxTau == 0: use vector to include all data out to freezeout in each event
+           (i.e. the output is a "ragged array" when read into numpy.
+      -->
+      <maxTau> 10. </maxTau> 
+      <dTau> 0.1 </dTau> <!-- if = 0, defaults to MUSIC's value -->
+      <maxabsX> 0 </maxabsX> <!-- if = 0, defaults to MUSIC's value -->
+      <dX> 0 </dX> <!-- if 0, defaults to use MUSIC's value-->
+      <out_file_name> bulk.root </out_file_name>
+      <!-- use next option to true whenever adding the root bulk writer -->
       <ensure_MusicWrapper_output> 1 </ensure_MusicWrapper_output>
   </RootBulkWriter>
 
@@ -101,8 +124,8 @@
   <!-- Jet Hadronization Module -->
   <JetHadronization>
     <name>colorless</name>
-    <take_recoil>1</take_recoil>
-    <eCMforHadronization>2510</eCMforHadronization>
+    <!-- <take_recoil>1</take_recoil> -->
+    <eCMforHadronization>200</eCMforHadronization>
   </JetHadronization>
 
 

@@ -46,29 +46,37 @@ public:
 
   void init_tree(const EvolutionHistory& bInfo);
 
-  TFile *f;
-  TTree *t;
+  TFile *f {nullptr};
+  TTree *t {nullptr};
 
-  bool use_vec {false}; // use_vec is n_tau_steps < 0
   std::unique_ptr<float[]> data; // array of floats for the data, using fixed number of tau-steps -- using fixed size array for reading efficiency
   vector<float> v_data; // using a variable sized vector for variable number of tau-steps
-  const int nFeatures {3};
 
-  string out_file_name;
   string in_music_name;
 
 private:
-  // internal use
-  int nX, nY, nT; //
-  int nX_in, nY_in;  // number of x and y points in the output grid
-  float xMin, xMax, yMin, yMax, dX, dY, dTau, tau0;
+  // state variables
+  bool use_vec {false}; // use when maxTau <= 0
+  bool isinit {false};
 
-  int mult_T, mult_X, mult_Y, ntotal;
-  bool isinit;
-  float min_dtau;
-  int tau_skip {1}; // write every tau_skip steps, determined from min_dtau
-  int nAvg {1}; // number x and y cells to average over when writing out
-  float nAvgsq {1};
+  // internal use
+  // xml input:
+  string out_file_name {"_.root"};
+  float maxabsX{0}, dX{0}, dTau{0}, maxTau{0};
+
+  // derived:
+  int nX{0}, nTau{0};
+  int ntotal;
+
+  // branch
+  float tau_freezeout {0};
+  int ntau_freezeout {0};
+
+  // input from hydro:
+  float tau0 {0};
+  float dTau_MUSIC {0};
+
+  const int nFeatures {3};
 
   static RegisterJetScapeModule<RootBulkWriter> reg;
 };

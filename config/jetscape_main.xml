@@ -297,10 +297,13 @@
           <name>GausLiquefier</name>
           <sigma_xy>0.1</sigma_xy>
           <sigma_tau>0.05</sigma_tau>
+          <!-- Add droplets in form of {{tau,x,y,z},{E,px,py,pz}}, .... -->
+          <!-- Example: --> 
+          <!-- <droplets>{{0.5, 6, 6, 0},  {10,50,50,0}}, --> 
+          <!--           {{0.5, -3, -3, 0},{150,0,0,0}}</droplets> -->
           <droplets> none </droplets>
       </GausLiquefier>
-
-      <!-- This option for if adding arb. energy to grid --> 
+      <!-- This option may be necessary to add synthetic energy to grid --> 
       <ignore_causality> 0 </ignore_causality>
 
   </Liquefier>
@@ -423,13 +426,20 @@
 
   <!-- RootBulkWriter -->
   <RootBulkWriter>
-    <name> RootBulkWriter </name>
-    <ofilename> root_bulk.root </ofilename>
-    <n_tau_steps>120</n_tau_steps>
-    <hydro_to_write> MUSIC </hydro_to_write>
-    <min_dtau> 0.1 </min_dtau>
-    <navg_xy> 1 </navg_xy>
-    <ensure_MusicWrapper_output> 0 </ensure_MusicWrapper_output>
+      <name> RootBulkWriter </name>
+      <out_file_name> bulk.root </out_file_name>
+      <!-- If maxTau != 0: events are set to fixed size arrays for each event,
+           with data either truncated before freezeout, or padded with zeros after
+           freezeout out to maxTau 
+           If maxTau == 0: use vector to include all data out to freezeout in each event
+           (i.e. the output is a "ragged array" when read into numpy.
+      -->
+      <maxTau> 0 </maxTau> 
+      <dTau> 0 </dTau> <!-- if = 0, default to MUSIC's value -->
+      <maxabsX> 7 </maxabsX> <!-- if = 0, default to MUSIC's value -->
+      <dX> 0 </dX> <!-- if 0, default to MUSIC's value-->
+      <!-- set the next option to true whenever adding the root bulk writer -->
+      <ensure_MusicWrapper_output> 0 </ensure_MusicWrapper_output>
   </RootBulkWriter>
 
 
