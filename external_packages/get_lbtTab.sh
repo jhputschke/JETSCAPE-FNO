@@ -12,7 +12,7 @@
 # Distributed under the GNU General Public License 3.0 (GPLv3 or later).
 # See COPYING for details.
 ##############################################################################
-
+#
 # clone the lbt-tables repository
 repo_dir="LBT-tables-repo"
 git clone https://github.com/JETSCAPE/LBT-tables.git "$repo_dir"
@@ -42,7 +42,11 @@ for file in "$repo_dir/LBT-tables-split-archive"/*.tar.gz; do
     fi
 done
 
+<<<<<<< HEAD
 # an associative array (map) for base names. eg. myFile.part0 and 
+=======
+# an associative array (map) for base names. eg. myFile.part0 and
+>>>>>>> a160d104fbd325232403f72630a4e5fe491127aa
 # myFile.part1 will share the base name myFile
 declare -A base_names
 

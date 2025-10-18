@@ -2,7 +2,7 @@
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
  * Modular, task-based framework for simulating all aspects of heavy-ion collisions
- * 
+ *
  * For the list of contributors see AUTHORS.
  *
  * Report issues at https://github.com/JETSCAPE/JETSCAPE/issues
@@ -57,7 +57,15 @@ void JetScapeTask::ExecuteTasks() {
   for (auto it : tasks) {
     if (it->active_exec) {
       JSDEBUG << "Executing " << it->GetId();
+      //auto start = std::chrono::high_resolution_clock::now();
+      //std::cout << "Start taking time measurement of Task : "<<it->GetId()<<endl;
+
       it->Exec();
+
+      //auto end = std::chrono::high_resolution_clock::now();
+      // Calculate duration
+      //auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      //std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 	}
   }
 }

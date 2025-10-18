@@ -2,7 +2,7 @@
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
  * Modular, task-based framework for simulating all aspects of heavy-ion collisions
- * 
+ *
  * For the list of contributors see AUTHORS.
  *
  * Report issues at https://github.com/JETSCAPE/JETSCAPE/issues
@@ -354,6 +354,7 @@ SurfaceCellInfo SurfaceFinder::PrepareASurfaceCell(
   temp_cell.mu_B = fluid_cell.mu_B;
   temp_cell.mu_Q = fluid_cell.mu_C;
   temp_cell.mu_S = fluid_cell.mu_S;
+  temp_cell.baryon_density=0; //REMARK JP: Dangerous fix!!! Make sure it is consistent throughout framework!!!!
 
   double u0 = sqrt(1. + fluid_cell.vx*fluid_cell.vx
                    + fluid_cell.vy*fluid_cell.vy

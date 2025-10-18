@@ -1,0 +1,5 @@
+# Ignore common file types in all directories
+**/*.pdf
+**/*.png
+**/*.svg
+**/*.pyc
