@@ -9,8 +9,17 @@
   - use the flat/bin/flat3d program with a `[flat_file_name].ini` configuration
     file to generate a `[flat_file_name].root` file (the name in the `.ini` file 
     points to the xscape output `.root` file).
+  - use the library from https://github.com/neuraloperator/neuraloperator.git
+    for the 3+1D FNO model, update the following three files (found under the
+    `writer` branch of the XSCAPE respsotory under the `./fno4d` directory.
+    More details are found in `./fno4d/readme`:
+        ./neuralop/losses/data_losses.py
+        ./neuralop/losses/finite_diff.py
+        ./neuralop/models/fno.py
+    Add this modified library to the python environment
   - use a python script, such as `train/fno_dAu3d/train_model.py` to train
     the FNO model.
+     
 
     output file includes:
     - best_model_state_dict.pt : contains the trained model weights
