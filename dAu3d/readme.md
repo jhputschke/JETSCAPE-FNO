@@ -72,7 +72,7 @@
 
 ### train_model.py
 
-    An example input script is provided in `train/dAu3d/train_model.py`
+    An example input script is provided in `./train/dAu3d/train_model.py`
 
     The example input script is a pure python script, but is is also writen so
     that it can use a marimo notebook feature. In current workflow, that isn't
