@@ -1,3 +1,16 @@
+# JETSCAPE-FNO
+
+This repository contains a fork of the JETSCAPE framework (see below based on 3.7.2) for a study first
+documented in the paper ``Fast prediction of hydrodynamnical evolution in
+ultra-relativistic heavy-ion collisions using Fourier Neural Operators''
+located at https://doi.org/10.48550/arXiv.2507.23598
+(Published in: Phys.Rev.C 113 (2026) 1, 014904)
+
+More details and documentation can be found in the [fno_hydro directory](https://github.com/jhputschke/JETSCAPE-FNO/tree/main/fno_hydro).
+
+All data in ROOT format and some pre-trained model can be found at: https://zenodo.org/records/16647726
+
+
 # JETSCAPE 3.7.2
 
 The [JETSCAPE](http://jetscape.org) simulation framework is an overarching computational envelope for developing complete event generators for heavy-ion collisions.
