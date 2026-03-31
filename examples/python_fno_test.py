@@ -47,14 +47,14 @@ _DEFAULT_MODEL = os.path.join(
     "traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt",
 )
 _DEFAULT_MAIN = os.path.join(_REPO_ROOT, "config", "jetscape_main.xml")
-_DEFAULT_USER = os.path.join(_REPO_ROOT, "config", "jetscape_user_AA_dukeTune.xml")
+_DEFAULT_USER = os.path.join(_REPO_ROOT, "fno_hydro/config", "jetscape_user_root_bulk_test.xml")
 
 # FNO grid configuration — must match the model the .pt file was trained on.
 # These values correspond to traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt
 FNO_CONFIG = dict(
     nx=60,
     ny=60,
-    ntau=50,          # time steps predicted by the model
+    ntau=59,          # time steps predicted by the model
     neta=1,
     n_features=3,     # [energy_density*tau, temperature, vx]  (3-feature model)
     x_min=-15.0,      # fm
@@ -95,7 +95,7 @@ def build_pipeline(args: argparse.Namespace):
     ini = create_module("TrentoInitial")
 
     # ── Pre-equilibrium ───────────────────────────────────────────────────────
-    preeq = create_module("FreestreamMilne")
+    preeq = create_module("NullPreDynamics")
 
     # ── FNO hydro (Python trampoline) ─────────────────────────────────────────
     cfg = {**FNO_CONFIG, "device": args.device}
@@ -108,22 +108,14 @@ def build_pipeline(args: argparse.Namespace):
 
     fno_hydro = PyFNOHydro(args.model, cfg)
 
-    # ── Jet energy loss ───────────────────────────────────────────────────────
-    jloss_mgr = create_module("JetEnergyLossManager")
-    jloss     = create_module("JetEnergyLoss")
-    matter    = create_module("Matter")
-    jloss.Add(matter)
-    jloss_mgr.Add(jloss)
+    # JetEnergyLossManager and HadronizationManager are framework-internal
+    # classes not registered in the module factory; they are only created by
+    # the C++ core when running fully from XML (Mode A).
+    # For this bulk-medium validation test we run the three-stage chain only:
+    #   InitialState → PreequilibriumDynamics → FluidDynamics
 
-    # ── Hadronization ─────────────────────────────────────────────────────────
-    hadro_mgr = create_module("HadronizationManager")
-    hadro     = create_module("Hadronization")
-    colorless = create_module("ColorlessHadronization")
-    hadro.Add(colorless)
-    hadro_mgr.Add(hadro)
-
-    # Pipeline order: IS → Preq → Hydro → JEL → Hadro
-    return [ini, preeq, fno_hydro, jloss_mgr, hadro_mgr]
+    # Pipeline order: IS → Preq → Hydro
+    return [ini, preeq, fno_hydro]
 
 
 def inspect_results(fno_hydro: PyFNOHydro, n_features: int, no_plots: bool) -> None:

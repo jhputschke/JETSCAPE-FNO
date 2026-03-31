@@ -86,6 +86,12 @@ public:
   void InitializeHydro(Parameter parameter_list);
 
   void EvolveHydro();
+
+  // Override Clear() so that bulk_info.data survives JetScapeTask::ClearTasks()
+  // at the end of each event.  EvolveHydro() already calls
+  // clear_up_evolution_data() at its own start, so multi-event runs are safe.
+  // Only the freeze-out surface (re-computed each event) is cleared here.
+  void Clear() { clearSurfaceCellVector(); }
   void GetHydroInfo(Jetscape::real t, Jetscape::real x, Jetscape::real y,
                     Jetscape::real z, std::unique_ptr<FluidCellInfo> &fluid_cell_info_ptr);
 

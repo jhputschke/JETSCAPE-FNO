@@ -57,6 +57,13 @@ class PyFluidDynamics : public FluidDynamics {
 public:
   using FluidDynamics::FluidDynamics; // inherit constructors
 
+  // When true, Clear() skips clear_up_evolution_data() so that bulk_info.data
+  // survives the JetScapeTask::ClearTasks() call at the end of each event.
+  // Set via set_preserve_bulk_info(True) from Python before running.
+  // EvolveHydro() should call clear_up_evolution_data() explicitly at its own
+  // start so multi-event runs remain correct.
+  bool preserve_bulk_info_ = false;
+
   // ── Virtual overrides (dispatched to Python) ───────────────────────────────
   void InitializeHydro(Parameter parameter_list) override {
     PYBIND11_OVERRIDE(void, FluidDynamics, InitializeHydro, parameter_list);
@@ -71,6 +78,12 @@ public:
     PYBIND11_OVERRIDE(void, FluidDynamics, Exec);
   }
   void Clear() override {
+    if (preserve_bulk_info_) {
+      // Keep bulk_info.data alive so Python can inspect it after Exec().
+      // Only clear the freeze-out surface (re-computed each event).
+      clearSurfaceCellVector();
+      return;
+    }
     PYBIND11_OVERRIDE(void, FluidDynamics, Clear);
   }
 
@@ -288,6 +301,21 @@ void bind_fluid_dynamics(py::module_ &m) {
       .def("Exec", &FluidDynamics::Exec,
            "Call EvolveHydro().")
       .def("Clear", &FluidDynamics::Clear)
+      // ── Bulk-info preservation across ClearTasks() ─────────────────────────
+      // JetScapeTask::ClearTasks() calls Clear() at the end of every event,
+      // which calls clear_up_evolution_data() and wipes bulk_info.data.
+      // Set preserve_bulk_info(True) to skip that so Python can inspect the
+      // data after js.Exec() returns.  EvolveHydro() must then call
+      // clear_up_evolution_data() itself at the start for multi-event safety.
+      .def("set_preserve_bulk_info",
+           [](PyFluidDynamics &fd, bool preserve) {
+             fd.preserve_bulk_info_ = preserve;
+           },
+           "When True, Clear() will not wipe bulk_info.data. "
+           "Lets Python read bulk_info after js.Exec() returns.",
+           py::arg("preserve"))
+      .def("get_preserve_bulk_info",
+           [](PyFluidDynamics &fd) { return fd.preserve_bulk_info_; })
       .def("InitializeHydro", &FluidDynamics::InitializeHydro,
            "Override in Python to initialise hydro (called from Init()).",
            py::arg("parameter_list"))

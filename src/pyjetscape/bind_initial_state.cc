@@ -19,20 +19,64 @@
 namespace py = pybind11;
 using namespace Jetscape;
 
+// ── PyInitialState trampoline ────────────────────────────────────────────────
+// Lets Python subclasses override Init(), Exec(), and Clear() so that a custom
+// initial condition (e.g. a Gaussian profile) can be injected into the pipeline
+// without an external binary such as trento.
+//
+// set_entropy_density_from_numpy() populates the protected member
+// entropy_density_distribution_ directly from a numpy array, following the
+// storage convention used by TrentoInitial:
+//   boost-invariant (nz=1):  for y { for x }   ← flat shape (ny*nx,) or (ny,nx)
+class PyInitialState : public InitialState {
+public:
+  using InitialState::InitialState;
+
+  void Init() override {
+    PYBIND11_OVERRIDE(void, InitialState, Init);
+  }
+  void Exec() override {
+    PYBIND11_OVERRIDE(void, InitialState, Exec);
+  }
+  void Clear() override {
+    PYBIND11_OVERRIDE(void, InitialState, Clear);
+  }
+
+  // Populate entropy_density_distribution_ from a flat or 2-D numpy array.
+  // For the boost-invariant case (nz = 1) the expected shape is (ny, nx) or
+  // (ny*nx,); any C-contiguous layout is accepted and the data is copied flat.
+  void set_entropy_density_from_numpy(
+      py::array_t<double, py::array::c_style | py::array::forcecast> arr) {
+    auto buf = arr.request();
+    size_t n = 1;
+    for (auto &s : buf.shape)
+      n *= static_cast<size_t>(s);
+    const double *ptr = static_cast<const double *>(buf.ptr);
+    entropy_density_distribution_.assign(ptr, ptr + n);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 void bind_initial_state(py::module_ &m) {
 
   // InitialState is a C++ abstract-ish base — concrete implementations are
   // registered via RegisterJetScapeModule<T> and created through create_module().
-  // Python code only *calls* methods on an InitialState pointer returned by
-  // PyFluidDynamics::get_ini_pointer().  No Python trampoline is needed.
-  py::class_<InitialState, JetScapeModuleBase,
+  // The PyInitialState trampoline allows Python subclasses to override Init(),
+  // Exec(), and Clear() and to fill the IC grid via set_entropy_density_from_numpy().
+  py::class_<InitialState, JetScapeModuleBase, PyInitialState,
              std::shared_ptr<InitialState>>(m, "InitialState",
       R"pbdoc(
         Interface for initial-state physics modules (e.g. TrentoInitial).
 
         Provides the entropy/binary-collision density grids that seed
         pre-equilibrium and hydro evolution.
+
+        Python subclasses can override Init(), Exec(), and Clear() and
+        populate the IC grid with set_entropy_density_from_numpy() instead
+        of running an external binary.
       )pbdoc")
+      .def(py::init<>())
       // ── Grid range accessors ───────────────────────────────────────────────
       .def("GetXMax",  &InitialState::GetXMax,
            "Maximum |x| of the nuclear profile grid [fm].")
@@ -111,5 +155,27 @@ void bind_initial_state(py::module_ &m) {
            py::arg("xmax"), py::arg("ymax"), py::arg("zmax"))
       .def("SetSteps", &InitialState::SetSteps,
            "Set grid step sizes (dx, dy, dz).",
-           py::arg("dx"), py::arg("dy"), py::arg("dz"));
+           py::arg("dx"), py::arg("dy"), py::arg("dz"))
+      // ── Python IC injection ───────────────────────────────────────────────
+      .def("set_entropy_density_from_numpy",
+           [](PyInitialState &ini,
+              py::array_t<double,
+                          py::array::c_style | py::array::forcecast> arr) {
+             ini.set_entropy_density_from_numpy(arr);
+           },
+           R"pbdoc(
+             Populate entropy_density_distribution_ from a numpy array.
+
+             Call this from a Python InitialState subclass inside Exec() to
+             inject a custom initial condition (e.g. a Gaussian profile)
+             without running an external program such as trento.
+
+             Parameters
+             ----------
+             arr : np.ndarray, shape (ny, nx) or (ny*nx,), dtype float64
+                 Entropy (or energy) density values in C-contiguous order:
+                 boost-invariant storage is ``for y { for x }``, so
+                 ``arr[iy, ix]`` maps to index ``iy * nx + ix``.
+           )pbdoc",
+           py::arg("arr"));
 }

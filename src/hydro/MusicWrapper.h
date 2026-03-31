@@ -128,6 +128,19 @@ public:
   void GetHyperSurface(Jetscape::real T_cut,
                        SurfaceCellInfo *surface_list_ptr){};
   void collect_freeze_out_surface();
+
+  // ── Python-interop: preserve bulk_info across ClearTasks() ─────────────────
+  // When set to true, Clear() skips clear_up_evolution_data() so that
+  // bulk_info.data survives the end-of-event cleanup and can be inspected from
+  // Python after Exec() returns.
+  void set_preserve_bulk_info(bool v) { preserve_bulk_info_ = v; }
+  bool get_preserve_bulk_info() const { return preserve_bulk_info_; }
+
+  //! Overrides FluidDynamics::Clear() to honour preserve_bulk_info_.
+  void Clear();
+
+private:
+  bool preserve_bulk_info_ = false;
 };
 
 #endif // MUSICWRAPPER_H

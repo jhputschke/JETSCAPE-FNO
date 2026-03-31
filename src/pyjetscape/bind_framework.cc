@@ -11,9 +11,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "FluidDynamics.h"
+#include "InitialState.h"
 #include "JetScape.h"
 #include "JetScapeModuleBase.h"
 #include "JetScapeTask.h"
+#include "MusicWrapper.h"
+#include "PreequilibriumDynamics.h"
+#include "TrentoInitial.h"
 
 namespace py = pybind11;
 using namespace Jetscape;
@@ -33,6 +38,14 @@ void bind_framework(py::module_ &m) {
            "Return the string identifier of this task.")
       .def("GetNumberOfTasks", &JetScapeTask::GetNumberOfTasks,
            "Return the number of sub-tasks currently registered.")
+      .def("GetTaskList",
+           [](JetScapeTask &t) -> std::vector<std::shared_ptr<JetScapeTask>> {
+             return t.GetTaskList();
+           },
+           "Return the list of sub-tasks as Python objects.")
+      .def("GetTaskAt", &JetScapeTask::GetTaskAt,
+           "Return the sub-task at index i.",
+           py::arg("i"))
       .def("ClearTaskList", &JetScapeTask::ClearTaskList,
            "Remove all sub-tasks.")
       .def("GetActive", &JetScapeTask::GetActive,
@@ -104,7 +117,7 @@ void bind_framework(py::module_ &m) {
   //   preeq = pyjetscape.create_module("FreestreamMilne")
   //   jmgr  = pyjetscape.create_module("JetEnergyLossManager")
   m.def("create_module",
-        [](const std::string &name) -> std::shared_ptr<JetScapeModuleBase> {
+        [](const std::string &name) -> py::object {
           auto mod = JetScapeModuleFactory::createInstance(name);
           if (!mod)
             throw py::value_error(
@@ -112,7 +125,26 @@ void bind_framework(py::module_ &m) {
                 "' is not registered in JetScapeModuleFactory. "
                 "Make sure the corresponding library (e.g. libFnoModule) is "
                 "loaded before calling create_module().");
-          return mod;
+          // Downcast to the most derived registered Python type so that all
+          // bound methods are accessible (e.g. FluidDynamics::get_bulk_info,
+          // InitialState::get_entropy_density_numpy, etc.).
+          //
+          // Concrete types are checked FIRST so that pybind11 resolves the
+          // Python type as e.g. MpiMusic (not just FluidDynamics), giving
+          // access to module-specific methods like set_preserve_bulk_info().
+          if (auto music = std::dynamic_pointer_cast<MpiMusic>(mod))
+            return py::cast(music);
+          if (auto fd = std::dynamic_pointer_cast<FluidDynamics>(mod))
+            return py::cast(fd);
+          if (auto preeq =
+                  std::dynamic_pointer_cast<PreequilibriumDynamics>(mod))
+            return py::cast(preeq);
+          if (auto trento =
+                  std::dynamic_pointer_cast<TrentoInitial>(mod))
+            return py::cast(trento);
+          if (auto ini = std::dynamic_pointer_cast<InitialState>(mod))
+            return py::cast(ini);
+          return py::cast(mod);
         },
         R"pbdoc(
           Create a registered JETSCAPE C++ module by name.

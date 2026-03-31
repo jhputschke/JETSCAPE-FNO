@@ -6,6 +6,7 @@ set(PYJETSCAPE_SOURCES
     bind_evolution.cc
     bind_initial_state.cc
     bind_fluid_dynamics.cc
+    bind_music.cc
 )
 
 pybind11_add_module(pyjetscape_core ${PYJETSCAPE_SOURCES})
@@ -21,6 +22,7 @@ target_include_directories(pyjetscape_core PRIVATE
     ${CMAKE_SOURCE_DIR}/src/afterburner
     ${CMAKE_SOURCE_DIR}/external_packages
     ${CMAKE_SOURCE_DIR}/external_packages/gtl/include
+    ${CMAKE_SOURCE_DIR}/external_packages/trento/src
 )
 
 target_link_libraries(pyjetscape_core PRIVATE JetScape)

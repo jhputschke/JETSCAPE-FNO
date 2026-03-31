@@ -15,6 +15,7 @@ void bind_framework(py::module_ &m);
 void bind_evolution(py::module_ &m);
 void bind_initial_state(py::module_ &m);
 void bind_fluid_dynamics(py::module_ &m);
+void bind_music(py::module_ &m);
 
 PYBIND11_MODULE(pyjetscape_core, m) {
   m.doc() = R"pbdoc(
@@ -32,4 +33,8 @@ PYBIND11_MODULE(pyjetscape_core, m) {
   bind_evolution(m);
   bind_initial_state(m);
   bind_fluid_dynamics(m);
+  // Concrete module bindings — must come AFTER base-class bindings above so
+  // that pybind11 can resolve the inheritance chain (MpiMusic : FluidDynamics,
+  // TrentoInitial : InitialState).
+  bind_music(m);
 }

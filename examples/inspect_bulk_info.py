@@ -7,24 +7,29 @@ density, temperature, and velocity field slices at selected proper-time steps.
 
 Usage (two modes):
 
-  1. Run a fresh simulation (Mode A, XML-driven), then inspect:
+  1. Run a fresh simulation (Mode B, explicit module pipeline), then inspect:
        conda activate js_fno
        python examples/inspect_bulk_info.py \\
            --main config/jetscape_main.xml \\
            --user config/jetscape_user_AA_dukeTune.xml
 
+     Use --hydro-module to choose the C++ hydro module (default: FnoHydro):
+       python examples/inspect_bulk_info.py --hydro-module MusicWrapper
+
   2. Pass in a pre-computed bulk_info numpy file (saved by a previous run):
        python examples/inspect_bulk_info.py --load bulk_info.npy
 
 Optional flags:
-    --main      Path to main XML config (default: config/jetscape_main.xml)
-    --user      Path to user XML config (default: config/jetscape_user_AA_dukeTune.xml)
-    --load      Load a previously saved .npy file instead of running a sim
-    --save      Save the extracted numpy array to this path (e.g. bulk_info.npy)
-    --n-feat    Number of features to extract (default: 3)
-    --outdir    Directory for output plots (default: inspect_bulk_info_out/)
-    --no-show   Do not open interactive plot windows (always saves to disk)
-    --events    Number of events for the in-process simulation (default: 1)
+    --main          Path to main XML config (default: config/jetscape_main.xml)
+    --user          Path to user XML config (default: config/jetscape_user_MUSIC.xml)
+    --load          Load a previously saved .npy file instead of running a sim
+    --save          Save the extracted numpy array to this path (e.g. bulk_info.npy)
+    --n-feat        Number of features to extract (default: 3)
+    --hydro-module  C++ hydro module name (default: MUSIC)
+    --use-trento    Use TrentoInitial (C++ module) instead of the Python GaussianIC
+    --outdir        Directory for output plots (default: inspect_bulk_info_out/)
+    --no-show       Do not open interactive plot windows (always saves to disk)
+    --events        Number of events for the in-process simulation (default: 1)
 """
 
 from __future__ import annotations
@@ -45,7 +50,7 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--main",   default=os.path.join(_REPO_ROOT, "config", "jetscape_main.xml"))
-    p.add_argument("--user",   default=os.path.join(_REPO_ROOT, "config", "jetscape_user_AA_dukeTune.xml"))
+    p.add_argument("--user",   default=os.path.join(_REPO_ROOT, "fno_hydro/config", "jetscape_user_root_bulk_test.xml"))
     p.add_argument("--load",   default=None,
                    help="Load bulk_info from a previously saved .npy file.")
     p.add_argument("--save",   default=None,
@@ -57,6 +62,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--no-show", action="store_true",
                    help="Never open interactive plot windows.")
     p.add_argument("--events", type=int, default=1)
+    p.add_argument("--hydro-module", default="MUSIC", dest="hydro_module",
+                   help="C++ hydro module name to create (default: MUSIC). "
+                        "Ignored when --load is used.")
+    p.add_argument("--use-trento", action="store_true", dest="use_trento",
+                   help="Use the C++ TrentoInitial module as the initial "
+                        "condition instead of the Python GaussianIC fallback. "
+                        "Requires trento to be built and XML configured correctly.")
     return p.parse_args()
 
 
@@ -66,29 +78,99 @@ def parse_args() -> argparse.Namespace:
 
 def run_simulation(args: argparse.Namespace):
     """
-    Run an in-process JETSCAPE simulation (Mode A) and return the hydro module.
+    Run a Mode B JETSCAPE pipeline, keeping a direct Python reference to the
+    hydro module so that bulk_info can be inspected after the run.
+
+    Uses a Python InitialState subclass (GaussianIC) to provide a Gaussian
+    energy-density profile without requiring an external binary (e.g. trento).
+    The C++ NullPreDynamics and the selected C++ hydro module (default: FnoHydro)
+    are created via create_module() and are now properly typed as their respective
+    Python base classes thanks to the pybind11 downcast in create_module().
 
     Returns
     -------
     js : JetScape
         The framework object after Finish().
     hydro : FluidDynamics
-        The hydro module from which bulk_info can be extracted.
+        The hydro module (MpiMusic or other) from which bulk_info can be
+        extracted via hydro.get_bulk_info().
+    ini : InitialState or TrentoInitial
+        The initial-state module used; TrentoInitial if --use-trento, else
+        a GaussianIC instance.  Useful for accessing event geometry info.
     """
-    from jetscape.run_jetscape import run_automatic
-    from jetscape.pyjetscape_core import FluidDynamics
+    import numpy as np
+    from jetscape import create_module, InitialState
+    from jetscape.run_jetscape import run_manual
 
-    js = run_automatic(args.main, args.user)
+    # ── Python InitialState subclass: Gaussian IC without external binary ──────
+    # GaussianIC overrides Init() to set the grid metadata and Exec() to fill
+    # entropy_density_distribution_ with a 2-D Gaussian profile.
+    # Storage order matches TrentoInitial: for y { for x }.
+    class GaussianIC(InitialState):
+        def __init__(self, nx=150, ny=150, xmax=15.0,
+                     ed_peak=30.0, sigma=4.0):
+            super().__init__()
+            self.SetId("GaussianIC")
+            self._nx = nx
+            self._ny = ny
+            self._xmax = xmax
+            self._ed_peak = ed_peak
+            self._sigma = sigma
 
-    # Walk the task list to find the FluidDynamics module
-    tasks = js.GetTasks()
-    hydro = None
-    for t in tasks:
-        if isinstance(t, FluidDynamics):
-            hydro = t
-            break
+        def Init(self):
+            dx = 2.0 * self._xmax / self._nx
+            self.SetRanges(self._xmax, self._xmax, 0.0)
+            self.SetSteps(dx, dx, 0.0)
 
-    return js, hydro
+        def Exec(self):
+            nx, ny = self._nx, self._ny
+            xmax = self._xmax
+            dx = 2.0 * xmax / nx
+            # Cell centres
+            xs = np.linspace(-xmax + dx / 2.0, xmax - dx / 2.0, nx)
+            ys = np.linspace(-xmax + dx / 2.0, xmax - dx / 2.0, ny)
+            X, Y = np.meshgrid(xs, ys, indexing='ij')   # shape (nx, ny)
+            ed = self._ed_peak * np.exp(
+                -(X ** 2 + Y ** 2) / (2.0 * self._sigma ** 2))
+            # Flatten in "for y { for x }" order: transpose to (ny, nx) then ravel
+            self.set_entropy_density_from_numpy(
+                np.ascontiguousarray(ed.T.ravel()))
+
+        def Clear(self):
+            pass
+
+    # ── Build initial condition ────────────────────────────────────────────────
+    # When --use-trento is given, use the C++ TrentoInitial module which requires
+    # trento to be built and the XML to contain valid <TrentoInitial> settings.
+    # Otherwise fall back to the self-contained Python GaussianIC.
+    if args.use_trento:
+        ini = create_module("TrentoInitial")   # typed as TrentoInitial
+    else:
+        ini = GaussianIC()
+
+    # ── Build pipeline ──────────────────────────────────────────────────
+    # ini   : TrentoInitial (C++) or GaussianIC (Python)
+    # preeq : C++ NullPreDynamics — reads entropy_density_distribution_
+    #         and fills pre_eq_ptr->e_[] so MUSIC/FnoHydro can read it
+    # hydro : C++ MUSIC (or other module) — create_module() now returns the
+    #         concrete typed object (MpiMusic) thanks to the pybind11 downcast
+    preeq = create_module("NullPreDynamics")
+    hydro = create_module(args.hydro_module)   # typed as MpiMusic (or other)
+
+    # Prevent ClearTasks() from wiping bulk_info.data before Python reads it.
+    # MpiMusic exposes set_preserve_bulk_info() natively; for Python subclasses
+    # the same method is defined on PyFluidDynamics.
+    try:
+        hydro.set_preserve_bulk_info(True)
+    except AttributeError:
+        pass  # C++ modules that override Clear() natively (e.g. FnoHydro)
+
+    js = run_manual(
+        args.main, args.user,
+        [ini, preeq, hydro],
+        n_events=args.events,
+    )
+    return js, hydro, ini
 
 
 def extract_bulk_numpy(hydro, n_features: int) -> "np.ndarray":
@@ -338,13 +420,22 @@ def main() -> None:
         arr = np.load(args.load)
         print(f"  Loaded array shape: {arr.shape}")
     else:
-        print("Running JETSCAPE simulation (Mode A) ...")
-        js, hydro = run_simulation(args)
+        ic_name = "TrentoInitial" if args.use_trento else "GaussianIC"
+        print(f"Running JETSCAPE simulation "
+              f"(Mode B, hydro: {args.hydro_module}, IC: {ic_name}) ...")
+        js, hydro, ini = run_simulation(args)
 
-        if hydro is None:
-            print("[!] Could not find a FluidDynamics module in the task list.")
-            print("    Either use --load <file> or ensure your user XML includes a hydro module.")
-            sys.exit(1)
+        # Print per-event geometry info when using TrentoInitial
+        try:
+            info = ini.get_event_info()
+            print("  TrentoInitial event info:")
+            print(f"    impact_parameter     = {info['impact_parameter']:.3f} fm")
+            print(f"    num_participant      = {info['num_participant']:.1f}")
+            print(f"    num_binary_collisions= {info['num_binary_collisions']:.1f}")
+            print(f"    total_entropy        = {info['total_entropy']:.2f}")
+            print(f"    event_centrality     = {info['event_centrality']:.1f} %")
+        except AttributeError:
+            pass  # GaussianIC — no event info
 
         bulk_info_obj = hydro.get_bulk_info()
 

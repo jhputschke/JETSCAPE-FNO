@@ -112,6 +112,11 @@ class PyFNOHydro(FluidDynamics):
 
         self.SetId("PyFNOHydro")
 
+        # Preserve bulk_info.data across ClearTasks() so Python can read it
+        # after run_manual() returns.  EvolveHydro() calls clear_up_evolution_data()
+        # itself at the start of each event, so multi-event runs are still correct.
+        self.set_preserve_bulk_info(True)
+
     # ── JETSCAPE interface ─────────────────────────────────────────────────────
 
     def InitializeHydro(self, params):

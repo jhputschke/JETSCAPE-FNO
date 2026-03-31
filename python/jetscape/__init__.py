@@ -21,10 +21,13 @@ from .pyjetscape_core import (  # noqa: F401
     FluidCellInfo,
     SurfaceCellInfo,
     EvolutionHistory,
-    # Physics modules
+    # Physics modules — base classes
     InitialState,
     PreequilibriumDynamics,
     FluidDynamics,
+    # Physics modules — concrete C++ implementations
+    MpiMusic,
+    TrentoInitial,
     # Hydro status enum and Parameter struct
     HydroStatus,
     Parameter,
