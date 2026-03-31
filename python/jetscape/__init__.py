@@ -1,0 +1,31 @@
+"""
+python/jetscape/__init__.py
+
+Convenience re-exports so user code can write:
+
+    import pyjetscape
+    js = pyjetscape.JetScape()
+
+instead of:
+
+    from python.jetscape import pyjetscape_core as pyjetscape
+"""
+
+from .pyjetscape_core import (  # noqa: F401
+    # Framework
+    JetScapeTask,
+    JetScapeModuleBase,
+    JetScape,
+    create_module,
+    # Evolution history
+    FluidCellInfo,
+    SurfaceCellInfo,
+    EvolutionHistory,
+    # Physics modules
+    InitialState,
+    PreequilibriumDynamics,
+    FluidDynamics,
+    # Hydro status enum and Parameter struct
+    HydroStatus,
+    Parameter,
+)

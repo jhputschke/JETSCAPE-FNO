@@ -36,6 +36,16 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmakemodules")
 # Unit Tests. Turn off with 'cmake -Dunittests=OFF'.
 option(unittests "Build all unittests." ON)
 
+# Python bindings.  Turn on with 'cmake -DUSE_PYTHON=ON'.
+# Requires Python ≥ 3.8 with development headers.  pybind11 is fetched
+# automatically via FetchContent (see external_packages/CMakeLists.txt).
+option(USE_PYTHON "Build pybind11 Python extension module (pyjetscape_core)" OFF)
+if (USE_PYTHON)
+  message("Python bindings requested (-DUSE_PYTHON=ON) ...")
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+  message(STATUS "Python3 found: ${Python3_EXECUTABLE} (${Python3_VERSION})")
+endif (USE_PYTHON)
+
 # freestream. Turn on with 'cmake -DUSE_FREESTREAM=ON'.
 # Note that some warnings are generated. Could be turned off by adding the following to CFLAGS in
 # external_packages/freestream-milne/Makefile
@@ -478,6 +488,12 @@ if (${ROOT_FOUND})
     add_subdirectory(./fno_hydro/example)
 
 endif(${ROOT_FOUND})
+
+# ── Python extension module (pyjetscape_core) ────────────────────────────────
+if (USE_PYTHON)
+    message("Building pyjetscape_core Python extension module ...")
+    add_subdirectory(./src/pyjetscape)
+endif (USE_PYTHON)
 
 
 # -----------------------------------------------------------

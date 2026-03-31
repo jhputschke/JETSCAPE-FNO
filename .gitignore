@@ -23,3 +23,6 @@ fno_hydro/libtorch
 fno_hydro/libtorch/*
 fno_hydro/input_root
 *__cmake*
+*__pycache*
+*.cpython*
+*.bak
