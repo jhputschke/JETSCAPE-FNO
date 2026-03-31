@@ -5,6 +5,10 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project (JetScape CXX C)
 
+if(NOT "${CMAKE_CXX_STANDARD}")
+   set(CMAKE_CXX_STANDARD 17)
+endif()
+
 # Fail if cmake is called in the source directory
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message("source directory:" ${CMAKE_SOURCE_DIR})
@@ -20,6 +24,7 @@ endif()
 # for mac compliance
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0153 OLD)
 
 # Tell cmake where to find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmakemodules")
