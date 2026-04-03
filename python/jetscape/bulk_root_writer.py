@@ -140,15 +140,23 @@ class PyBulkRootWriter(JetScapeModuleBase):
         self._x_min: float = 0.0
         self._dx_hydro: float = 0.0
 
-        # Per-event data accumulator (list of np.ndarray)
+        # Open ROOT file handle (set on first Exec() once grid dims are known)
+        self._root_file = None
+        self._event_count: int = 0
+
+        # Per-event data accumulator used only for the .npz fallback path
         self._events: list[np.ndarray] = []
 
     # ── JETSCAPE interface ─────────────────────────────────────────────────────
 
     def Init(self) -> None:
         """Reset per-run state.  Called once by JetScape::Init()."""
+        if self._root_file is not None:
+            self._root_file.close()
+            self._root_file = None
         self._events = []
         self._init_branch = False
+        self._event_count = 0
         print(f"PyBulkRootWriter: output → {self._output_name}, "
               f"n_features = {self._n_features}")
 
@@ -196,6 +204,21 @@ class PyBulkRootWriter(JetScapeModuleBase):
                 print(f"  InitBranch: tau0={tau0:.3f} fm/c, "
                       f"x ∈ [{x_min:.1f}, {x_max:.1f}] fm, "
                       f"grid = ({m_nX}, {m_nY}, {m_nT})")
+            # Open the ROOT file and create the tree now that dimensions are known
+            if _UPROOT_AVAILABLE and self._output_name.endswith(".root"):
+                flat_size = m_nX * m_nY * m_nT * self._n_features
+                self._root_file = uproot.recreate(self._output_name)
+                self._root_file.mktree("t", {
+                    "user_res":  np.dtype(("float32", (flat_size,))),
+                    "nx":        "int32",
+                    "ny":        "int32",
+                    "ntau":      "int32",
+                    "nfeatures": "int32",
+                    "tau0":      "float32",
+                    "dtau":      "float32",
+                    "x_min":     "float32",
+                    "dx":        "float32",
+                })
 
         # ── Build user-resolution array [x][y][tau][features] ─────────────────
         data = np.zeros((m_nX, m_nY, m_nT, self._n_features), dtype=np.float32)
@@ -216,11 +239,28 @@ class PyBulkRootWriter(JetScapeModuleBase):
                         data[i, j, k, 2] = cell.vx
                         data[i, j, k, 3] = cell.vy
 
-        self._events.append(data)
+        if self._root_file is not None:
+            # Write this event directly into the open tree
+            self._root_file["t"].extend({
+                "user_res":  data.reshape(1, -1),
+                "nx":        np.array([m_nX],           dtype=np.int32),
+                "ny":        np.array([m_nY],           dtype=np.int32),
+                "ntau":      np.array([m_nT],           dtype=np.int32),
+                "nfeatures": np.array([self._n_features], dtype=np.int32),
+                "tau0":      np.array([self._tau0],     dtype=np.float32),
+                "dtau":      np.array([self._d_tau],    dtype=np.float32),
+                "x_min":     np.array([self._x_min],   dtype=np.float32),
+                "dx":        np.array([self._d_x],     dtype=np.float32),
+            })
+            self._event_count += 1
+        else:
+            # npz fallback: accumulate and write at Finish()
+            self._events.append(data)
 
         if self._verbose:
             elapsed = time.perf_counter() - t_start
-            print(f"  PyBulkRootWriter: event {len(self._events)} "
+            count = self._event_count if self._root_file is not None else len(self._events)
+            print(f"  PyBulkRootWriter: event {count} "
                   f"extracted in {elapsed:.2f} s")
 
     def Clear(self) -> None:
@@ -229,72 +269,41 @@ class PyBulkRootWriter(JetScapeModuleBase):
 
     def Finish(self) -> None:
         """
-        Write all accumulated events to the output file.
+        Finalise the output file.
+
+        For ROOT output the tree has already been filled per event; this method
+        just closes the file handle.  For the .npz fallback the accumulated
+        events are written here.
 
         Called automatically by JetScape::Finish(), or manually by the user
         after jetscape.Exec() completes.
         """
+        if self._root_file is not None:
+            self._root_file.close()
+            self._root_file = None
+            if self._event_count == 0:
+                print("PyBulkRootWriter::Finish() — no events were written.")
+            else:
+                print(f"PyBulkRootWriter: wrote {self._event_count} event(s) to "
+                      f"{self._output_name}")
+                print(f"  user_res shape per event: "
+                      f"({self._m_nX}, {self._m_nY}, {self._m_nT}, {self._n_features})")
+            return
+
+        # ── npz fallback ───────────────────────────────────────────────────────
         if not self._events:
             print("PyBulkRootWriter::Finish() — no events to write.")
             return
 
-        if _UPROOT_AVAILABLE and self._output_name.endswith(".root"):
-            self._write_root()
-        else:
-            if not _UPROOT_AVAILABLE and self._output_name.endswith(".root"):
-                fallback = os.path.splitext(self._output_name)[0] + ".npz"
-                print(f"PyBulkRootWriter: uproot not available, "
-                      f"falling back to {fallback}")
-                self._output_name = fallback
-            self._write_npz()
+        if not _UPROOT_AVAILABLE and self._output_name.endswith(".root"):
+            fallback = os.path.splitext(self._output_name)[0] + ".npz"
+            print(f"PyBulkRootWriter: uproot not available, "
+                  f"falling back to {fallback}")
+            self._output_name = fallback
+        self._write_npz()
 
     # ── Output helpers ─────────────────────────────────────────────────────────
 
-    def _write_root(self) -> None:
-        """
-        Write event list to a ROOT TTree using uproot.
-
-        The TTree "t" has one entry per event with branches:
-            user_res  — flat float32 array (m_nX * m_nY * m_nT * n_features)
-            nx, ny, ntau, nfeatures — grid shape integers
-            tau0, dtau, x_min, dx  — grid coordinate floats
-        """
-        n_events = len(self._events)
-        m_nX, m_nY, m_nT, nF = self._events[0].shape
-
-        # Stack events → (n_events, m_nX * m_nY * m_nT * nF)
-        stacked = np.stack(
-            [ev.reshape(-1) for ev in self._events], axis=0
-        )  # shape (n_events, flat_size)
-
-        flat_size = m_nX * m_nY * m_nT * nF
-        with uproot.recreate(self._output_name) as f:
-            f.mktree("t", {
-                "user_res":  np.dtype(("float32", (flat_size,))),
-                "nx":        "int32",
-                "ny":        "int32",
-                "ntau":      "int32",
-                "nfeatures": "int32",
-                "tau0":      "float32",
-                "dtau":      "float32",
-                "x_min":     "float32",
-                "dx":        "float32",
-            })
-            f["t"].extend({
-                "user_res":  stacked,
-                "nx":        np.full(n_events, m_nX,           dtype=np.int32),
-                "ny":        np.full(n_events, m_nY,           dtype=np.int32),
-                "ntau":      np.full(n_events, m_nT,           dtype=np.int32),
-                "nfeatures": np.full(n_events, nF,             dtype=np.int32),
-                "tau0":      np.full(n_events, self._tau0,     dtype=np.float32),
-                "dtau":      np.full(n_events, self._d_tau,    dtype=np.float32),
-                "x_min":     np.full(n_events, self._x_min,   dtype=np.float32),
-                "dx":        np.full(n_events, self._d_x,      dtype=np.float32),
-            })
-
-        print(f"PyBulkRootWriter: wrote {n_events} event(s) to "
-              f"{self._output_name}")
-        print(f"  user_res shape per event: ({m_nX}, {m_nY}, {m_nT}, {nF})")
 
     def _write_npz(self) -> None:
         """
