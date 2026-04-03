@@ -2,8 +2,11 @@
  * bind_framework.cc
  *
  * Binds:
- *   - JetScapeTask  (base of all modules: Add, SetId, GetId)
+ *   - JetScapeTask      (base of all modules: Add, SetId, GetId)
  *   - JetScapeModuleBase (SetXMLMainFileName, SetXMLUserFileName, Init, Exec)
+ *                        WITH PyJetScapeModuleBase trampoline so Python
+ *                        subclasses can override Init(), Exec(), Clear(),
+ *                        and Finish().
  *   - JetScape (Init, Exec, Finish, SetNumberOfEvents, SetReuseHydro, …)
  *   - create_module(name) — wraps JetScapeModuleFactory::createInstance
  ******************************************************************************/
@@ -22,6 +25,41 @@
 
 namespace py = pybind11;
 using namespace Jetscape;
+
+// ── PyJetScapeModuleBase trampoline ──────────────────────────────────────────
+// Allows Python subclasses to override Init(), Exec(), Clear(), and Finish().
+// Used by PyBulkRootWriter and any other Python module added to a JetScape
+// pipeline via JetScape.Add().
+//
+// Example Python subclass:
+//
+//   class MyModule(pyjetscape.JetScapeModuleBase):
+//       def Init(self):
+//           self.SetId("MyModule")
+//       def Exec(self):
+//           sm    = pyjetscape.JetScapeSignalManager.Instance()
+//           hydro = sm.GetHydroPointer()
+//           ...
+//       def Finish(self):
+//           ...  # called by JetScape.Finish()
+//
+class PyJetScapeModuleBase : public JetScapeModuleBase {
+public:
+  using JetScapeModuleBase::JetScapeModuleBase; // inherit constructors
+
+  void Init() override {
+    PYBIND11_OVERRIDE(void, JetScapeModuleBase, Init);
+  }
+  void Exec() override {
+    PYBIND11_OVERRIDE(void, JetScapeModuleBase, Exec);
+  }
+  void Clear() override {
+    PYBIND11_OVERRIDE(void, JetScapeModuleBase, Clear);
+  }
+  void Finish() override {
+    PYBIND11_OVERRIDE(void, JetScapeModuleBase, Finish);
+  }
+};
 
 void bind_framework(py::module_ &m) {
 
@@ -56,8 +94,27 @@ void bind_framework(py::module_ &m) {
 
   // ── JetScapeModuleBase ──────────────────────────────────────────────────────
   // Adds XML configuration accessors on top of JetScapeTask.
-  py::class_<JetScapeModuleBase, JetScapeTask,
-             std::shared_ptr<JetScapeModuleBase>>(m, "JetScapeModuleBase")
+  // Uses PyJetScapeModuleBase as the trampoline so Python subclasses may
+  // override Init(), Exec(), Clear(), and Finish().
+  py::class_<JetScapeModuleBase, JetScapeTask, PyJetScapeModuleBase,
+             std::shared_ptr<JetScapeModuleBase>>(m, "JetScapeModuleBase",
+      R"pbdoc(
+        Base class for all JETSCAPE physics modules.
+
+        Subclass this in Python to create a custom module that can be inserted
+        into a JETSCAPE pipeline via JetScape.Add():
+
+            class MyModule(pyjetscape.JetScapeModuleBase):
+                def Init(self):
+                    self.SetId("MyModule")
+                def Exec(self):
+                    sm    = pyjetscape.JetScapeSignalManager.Instance()
+                    hydro = sm.GetHydroPointer()
+                    ...
+                def Finish(self):
+                    ...  # called by JetScape.Finish()
+      )pbdoc")
+      .def(py::init<>())
       .def("SetXMLMainFileName", &JetScapeModuleBase::SetXMLMainFileName,
            "Set the main (default) XML configuration file path.",
            py::arg("filename"))
@@ -71,7 +128,11 @@ void bind_framework(py::module_ &m) {
       .def("Init", &JetScapeModuleBase::Init,
            "Initialise this module (reads XML, sets up sub-tasks).")
       .def("Exec", &JetScapeModuleBase::Exec,
-           "Execute this module.");
+           "Execute this module for one event.")
+      .def("Clear", &JetScapeModuleBase::Clear,
+           "Clear per-event state (called between events).")
+      .def("Finish", &JetScapeModuleBase::Finish,
+           "Finalise the module (called by JetScape::Finish()).");
 
   // ── JetScape ────────────────────────────────────────────────────────────────
   // Top-level framework controller.  Drive a simulation with:
