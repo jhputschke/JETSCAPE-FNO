@@ -21,10 +21,27 @@ All three produce a PyFNOHydro instance that can be added to a JETSCAPE
 pipeline with:
 
     js.Add(hydro)     # after Add(preeq) and before Add(jloss_mgr)
+
+Config source options
+---------------------
+config dict (any approach above):
+    Explicitly pass every grid parameter — the original approach.
+
+fno_config_from_xml(user_xml_path):
+    Parse the JETSCAPE user XML with Python's stdlib before constructing the
+    pipeline.  No rebuild required.  Use when you want to inspect the config
+    before run_manual() is called.
+
+config=None (reads from JetScapeXML via C++ binding):
+    Pass config=None and the module reads <Hydro><FNO> values from the already-
+    loaded JETSCAPE XML inside InitializeHydro() — the most JETSCAPE-native
+    approach, exactly like C++ FnoHydro.  Requires the shared library to be
+    rebuilt after the binding addition in bind_framework.cc.
 """
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as _ET
 import numpy as np
 
 try:
@@ -36,6 +53,74 @@ except ImportError:
 
 from .pyjetscape_core import FluidDynamics
 from .utils import rebin_preeq_to_fno_grid
+
+
+def fno_config_from_xml(xml_path: str, *, device: str = "cpu") -> dict:
+    """Build an FNO config dict by parsing a JETSCAPE user XML file.
+
+    Reads ``<Hydro><FNO>`` tags using Python's stdlib
+    ``xml.etree.ElementTree`` — no C++ framework or rebuild needed.
+    Can be called before the pipeline is constructed.
+
+    Parameters
+    ----------
+    xml_path : str
+        Path to the JETSCAPE user XML file (the one passed as ``--user``).
+    device : str
+        PyTorch device string to embed in the returned dict (``'cpu'``,
+        ``'cuda'``, ``'mps'``).
+
+    Returns
+    -------
+    dict
+        Config dict compatible with ``PyFNOHydro(model, config)``.
+
+    Raises
+    ------
+    ValueError
+        If ``<Hydro><FNO>`` block or a required tag is missing.
+    """
+    tree = _ET.parse(xml_path)
+    root = tree.getroot()
+
+    fno = root.find("Hydro/FNO")
+    if fno is None:
+        raise ValueError(
+            f"No <Hydro><FNO> block found in {xml_path}. "
+            "Make sure the user XML contains a <Hydro><FNO>…</FNO></Hydro> section."
+        )
+
+    def _int(tag, default=None):
+        el = fno.find(tag)
+        if el is None:
+            if default is None:
+                raise ValueError(f"<{tag}> not found in <Hydro><FNO> of {xml_path}")
+            return default
+        return int(el.text)
+
+    def _float(tag, default=None):
+        el = fno.find(tag)
+        if el is None:
+            if default is None:
+                raise ValueError(f"<{tag}> not found in <Hydro><FNO> of {xml_path}")
+            return default
+        return float(el.text)
+
+    n_features = _int("n_features")
+    return dict(
+        nx          = _int("nx"),
+        ny          = _int("ny"),
+        ntau        = _int("ntau"),
+        neta        = _int("neta", default=1),
+        n_features  = n_features,
+        x_min       = _float("x_min"),
+        y_min       = _float("y_min"),
+        dtau        = _float("dtau"),
+        deta        = _float("deta", default=0.0),
+        T_freeze    = _float("freezeout_temperature"),
+        tau_normalise = n_features == 3,
+        device      = device,
+    )
 
 
 class PyFNOHydro(FluidDynamics):
@@ -56,8 +141,8 @@ class PyFNOHydro(FluidDynamics):
           The checkpoint is loaded with ``torch.load`` and
           ``load_state_dict``.
         * ``nn.Module``           — live model used as-is; no loading step.
-    config : dict
-        Must contain:
+    config : dict | None
+        When a **dict**, must contain:
           nx      : int      — FNO grid points in x
           ny      : int      — FNO grid points in y
           ntau    : int      — number of time steps predicted by the model
@@ -68,13 +153,24 @@ class PyFNOHydro(FluidDynamics):
           dtau    : float    — tau step [fm/c]
           deta    : float    — eta step (0 for boost-invariant)
           T_freeze : float   — freeze-out temperature [GeV]
-        Optional:
+        Optional keys in dict:
           device  : str      — 'cpu', 'cuda', 'mps'  (default: 'cpu')
           tau_normalise : bool — whether model output is ed*tau (default True
                                  for n_features==3, False for n_features==4)
+
+        When **None**, grid parameters are read from the loaded JETSCAPE XML
+        (``<Hydro><FNO>`` block) inside ``InitializeHydro()``, i.e. after
+        ``js.Init()`` has opened the XML files.  This is the most JETSCAPE-
+        native approach and mirrors what C++ ``FnoHydro`` does.
+        Requires that ``bind_framework.cc`` has been rebuilt with the
+        ``get_xml_element_*`` binding additions.
+    device : str
+        PyTorch device string (``'cpu'``, ``'cuda'``, ``'mps'``).
+        Only used when *config* is ``None``; when config is a dict, use
+        ``config.get('device', 'cpu')`` instead.
     """
 
-    def __init__(self, model, config: dict):
+    def __init__(self, model, config=None, *, device: str = "cpu"):
         if not _TORCH_AVAILABLE:
             raise ImportError(
                 "PyFNOHydro requires PyTorch.  "
@@ -106,8 +202,10 @@ class PyFNOHydro(FluidDynamics):
                 "Expected: str path, (nn.Module, str) tuple, or nn.Module."
             )
 
+        # config=None → read from JETSCAPE XML in InitializeHydro()
         self._config = config
-        self._device = torch.device(config.get("device", "cpu"))
+        _dev = config.get("device", device) if config is not None else device
+        self._device = torch.device(_dev)
         self._model  = self._model.to(self._device)
 
         self.SetId("PyFNOHydro")
@@ -119,11 +217,39 @@ class PyFNOHydro(FluidDynamics):
 
     # ── JETSCAPE interface ─────────────────────────────────────────────────────
 
+    def _read_config_from_xml(self) -> dict:
+        """Read FNO grid config from the loaded JETSCAPE XML via C++ binding.
+
+        Uses ``get_xml_element_{int,double,text}`` exposed on
+        ``JetScapeModuleBase`` (requires bind_framework.cc rebuild).
+        Called only inside ``InitializeHydro()``, after the XML files have
+        been opened by the framework.
+        """
+        g = ["Hydro", "FNO"]
+        n_features = self.get_xml_element_int(g + ["n_features"])
+        return dict(
+            nx           = self.get_xml_element_int(g + ["nx"]),
+            ny           = self.get_xml_element_int(g + ["ny"]),
+            ntau         = self.get_xml_element_int(g + ["ntau"]),
+            neta         = self.get_xml_element_int(g + ["neta"], False) or 1,
+            n_features   = n_features,
+            x_min        = self.get_xml_element_double(g + ["x_min"]),
+            y_min        = self.get_xml_element_double(g + ["y_min"]),
+            dtau         = self.get_xml_element_double(g + ["dtau"]),
+            deta         = self.get_xml_element_double(g + ["deta"], False),
+            T_freeze     = self.get_xml_element_double(g + ["freezeout_temperature"]),
+            tau_normalise = n_features == 3,
+        )
+
     def InitializeHydro(self, params):
-        """
-        Read grid configuration from self._config.
+        """Read grid configuration and initialise hydro.
+
         Called by FluidDynamics::Init() after the XML is loaded.
+        If *config* was ``None`` at construction, grid parameters are read
+        from ``<Hydro><FNO>`` in the JETSCAPE XML via ``get_xml_element_*``.
         """
+        if self._config is None:
+            self._config = self._read_config_from_xml()
         cfg = self._config
         self._nx        = int(cfg["nx"])
         self._ny        = int(cfg["ny"])

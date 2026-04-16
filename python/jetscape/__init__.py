@@ -11,6 +11,8 @@ instead of:
     from python.jetscape import pyjetscape_core as pyjetscape
 """
 
+from .fno_hydro import fno_config_from_xml  # noqa: F401
+
 from .pyjetscape_core import (  # noqa: F401
     # Framework
     JetScapeTask,

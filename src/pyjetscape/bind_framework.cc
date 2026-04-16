@@ -19,12 +19,43 @@
 #include "JetScape.h"
 #include "JetScapeModuleBase.h"
 #include "JetScapeTask.h"
+#include "JetScapeXML.h"
 #include "MusicWrapper.h"
 #include "PreequilibriumDynamics.h"
 #include "TrentoInitial.h"
+#include "tinyxml2.h"
 
 namespace py = pybind11;
 using namespace Jetscape;
+
+// Walk a sequence of XML tag names from root, returning the deepest element
+// found (nullptr if any step fails).  Mirrors the logic in JetScapeXML.cc but
+// accepts std::vector<std::string> so it can be called from Python.
+static tinyxml2::XMLElement *
+xml_walk(tinyxml2::XMLElement *root, const std::vector<std::string> &path) {
+  if (!root) return nullptr;
+  tinyxml2::XMLElement *cur = nullptr;
+  for (const auto &tag : path) {
+    cur = (cur ? cur : root)->FirstChildElement(tag.c_str());
+    if (!cur) return nullptr;
+  }
+  return cur;
+}
+
+// Lookup path in user XML (first) then main XML.
+static tinyxml2::XMLElement *
+xml_find(const std::vector<std::string> &path) {
+  auto *xml = JetScapeXML::Instance();
+  tinyxml2::XMLElement *el = xml_walk(xml->GetXMLRootUser(), path);
+  if (!el)              el = xml_walk(xml->GetXMLRootMain(), path);
+  return el;
+}
+
+static std::string xml_path_str(const std::vector<std::string> &path) {
+  std::string s;
+  for (const auto &t : path) s += "/" + t;
+  return s;
+}
 
 // ── PyJetScapeModuleBase trampoline ──────────────────────────────────────────
 // Allows Python subclasses to override Init(), Exec(), Clear(), and Finish().
@@ -132,7 +163,97 @@ void bind_framework(py::module_ &m) {
       .def("Clear", &JetScapeModuleBase::Clear,
            "Clear per-event state (called between events).")
       .def("Finish", &JetScapeModuleBase::Finish,
-           "Finalise the module (called by JetScape::Finish()).");
+           "Finalise the module (called by JetScape::Finish()).")
+      // ── JetScapeXML accessors (user file first, then main file) ────────────
+      // Mirrors JetScapeModuleBase::GetXMLElement{Text,Int,Double} but accepts
+      // a Python list of tag names instead of a C++ initializer_list.
+      // Safe to call from Python overrides of InitializeHydro() / Init() since
+      // the XML files are already open by the time those methods run.
+      .def("get_xml_element_text",
+           [](JetScapeModuleBase &, std::vector<std::string> path,
+              bool required) -> std::string {
+             auto *el = xml_find(path);
+             if (el && el->GetText()) return el->GetText();
+             if (required)
+               throw std::runtime_error(
+                   "XML element " + xml_path_str(path) + " not found");
+             return "";
+           },
+           R"pbdoc(
+             Read a text value from the loaded JETSCAPE XML.
+
+             Searches the user XML first, then the main XML (same priority as
+             the C++ JetScapeModuleBase::GetXMLElementText helper).
+
+             Parameters
+             ----------
+             path : list[str]
+                 Sequence of tag names, e.g. ["Hydro", "FNO", "model_file"].
+             required : bool, default True
+                 If True, raises RuntimeError when the element is not found.
+
+             Returns
+             -------
+             str
+                 Element text content, or "" when not found and not required.
+           )pbdoc",
+           py::arg("path"), py::arg("required") = true)
+      .def("get_xml_element_int",
+           [](JetScapeModuleBase &, std::vector<std::string> path,
+              bool required) -> int {
+             auto *el = xml_find(path);
+             if (el) { int v = 0; el->QueryIntText(&v); return v; }
+             if (required)
+               throw std::runtime_error(
+                   "XML element " + xml_path_str(path) + " not found");
+             return 0;
+           },
+           R"pbdoc(
+             Read an integer value from the loaded JETSCAPE XML.
+
+             Searches the user XML first, then the main XML.
+
+             Parameters
+             ----------
+             path : list[str]
+                 Sequence of tag names, e.g. ["Hydro", "FNO", "nx"].
+             required : bool, default True
+                 If True, raises RuntimeError when the element is not found.
+
+             Returns
+             -------
+             int
+                 Parsed integer, or 0 when not found and not required.
+           )pbdoc",
+           py::arg("path"), py::arg("required") = true)
+      .def("get_xml_element_double",
+           [](JetScapeModuleBase &, std::vector<std::string> path,
+              bool required) -> double {
+             auto *el = xml_find(path);
+             if (el) { double v = 0.; el->QueryDoubleText(&v); return v; }
+             if (required)
+               throw std::runtime_error(
+                   "XML element " + xml_path_str(path) + " not found");
+             return 0.;
+           },
+           R"pbdoc(
+             Read a double value from the loaded JETSCAPE XML.
+
+             Searches the user XML first, then the main XML.
+
+             Parameters
+             ----------
+             path : list[str]
+                 Sequence of tag names, e.g. ["Hydro", "FNO", "dtau"].
+             required : bool, default True
+                 If True, raises RuntimeError when the element is not found.
+
+             Returns
+             -------
+             float
+                 Parsed double, or 0.0 when not found and not required.
+           )pbdoc",
+           py::arg("path"), py::arg("required") = true);
 
   // ── JetScape ────────────────────────────────────────────────────────────────
   // Top-level framework controller.  Drive a simulation with:

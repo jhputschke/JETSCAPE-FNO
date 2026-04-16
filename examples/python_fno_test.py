@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
 # and PyTorch each ship libomp; whichever is initialised second segfaults.
 import torch  # noqa: E402
 
-from jetscape import create_module
+from jetscape import create_module, fno_config_from_xml
 from jetscape.fno_hydro import PyFNOHydro
 from jetscape.run_jetscape import run_manual
 from jetscape.utils import bulk_info_to_numpy, bulk_info_to_tensor
@@ -87,6 +87,18 @@ def parse_args() -> argparse.Namespace:
                    help="PyTorch device for FNO inference")
     p.add_argument("--no-plots", action="store_true",
                    help="Skip matplotlib diagnostics (useful in headless CI)")
+    p.add_argument(
+        "--config-source",
+        choices=["dict", "python-xml", "jetscape-xml"],
+        default="dict",
+        help=(
+            "How to supply the FNO grid configuration:\n"
+            "  dict         — hardcoded FNO_CONFIG dict (original approach)\n"
+            "  python-xml   — parse user XML with Python stdlib (fno_config_from_xml)\n"
+            "  jetscape-xml — let PyFNOHydro read <Hydro><FNO> via JetScapeXML\n"
+            "                 C++ binding in InitializeHydro() [requires rebuild]"
+        ),
+    )
     return p.parse_args()
 
 
@@ -95,23 +107,72 @@ def build_pipeline(args: argparse.Namespace):
     Construct all JETSCAPE module objects for Mode-B execution.
 
     Returns a list in pipeline order suitable for run_manual().
+
+    Three config-source strategies are demonstrated (select with
+    ``--config-source``):
+
+    dict (default)
+        Use the hardcoded ``FNO_CONFIG`` dict defined at the top of this
+        script.  Fastest to get running; no XML parsing needed.
+
+    python-xml
+        Call ``fno_config_from_xml(args.user)`` to parse ``<Hydro><FNO>``
+        from the user XML with Python's stdlib ``xml.etree.ElementTree``.
+        Keeps the XML as the single source of truth without requiring a C++
+        rebuild.
+
+    jetscape-xml
+        Pass ``config=None`` to ``PyFNOHydro``; the module reads all grid
+        parameters from the loaded JETSCAPE XML inside ``InitializeHydro()``
+        via ``self.get_xml_element_*`` — exactly like C++ ``FnoHydro``.
+        Requires that ``bind_framework.cc`` has been rebuilt with the
+        ``get_xml_element_*`` binding additions.
     """
-    # ── Initial state ─────────────────────────────────────────────────────────
-    ini = create_module("TrentoInitial")
-
-    # ── Pre-equilibrium ───────────────────────────────────────────────────────
-    preeq = create_module("NullPreDynamics")
-
-    # ── FNO hydro (Python trampoline) ─────────────────────────────────────────
-    cfg = {**FNO_CONFIG, "device": args.device}
-
     if not os.path.isfile(args.model):
         raise FileNotFoundError(
             f"FNO model file not found: {args.model}\n"
             "Download or train a model and pass --model <path>."
         )
 
-    fno_hydro = PyFNOHydro(args.model, cfg)
+    # ── Initial state ─────────────────────────────────────────────────────────
+    ini = create_module("TrentoInitial")
+
+    # ── Pre-equilibrium ───────────────────────────────────────────────────────
+    preeq = create_module("NullPreDynamics")
+
+    # ── FNO hydro (Python trampoline) — config-source dispatch ───────────────
+    source = args.config_source
+
+    if source == "dict":
+        # ── Approach 1: hardcoded dict ────────────────────────────────────────
+        # Original approach: every parameter lives in this script.
+        cfg = {**FNO_CONFIG, "device": args.device}
+        fno_hydro = PyFNOHydro(args.model, cfg)
+        print(f"[config-source=dict] Using hardcoded FNO_CONFIG dict.")
+
+    elif source == "python-xml":
+        # ── Approach 2: parse user XML with Python stdlib ─────────────────────
+        # fno_config_from_xml() reads <Hydro><FNO> tags using
+        # xml.etree.ElementTree — no rebuild needed, works before js.Init().
+        cfg = fno_config_from_xml(args.user, device=args.device)
+        fno_hydro = PyFNOHydro(args.model, cfg)
+        print(f"[config-source=python-xml] Config parsed from {args.user}:")
+        for k, v in cfg.items():
+            print(f"    {k} = {v}")
+
+    elif source == "jetscape-xml":
+        # ── Approach 3: JetScapeXML class via C++ binding ────────────────────
+        # Pass config=None; PyFNOHydro.InitializeHydro() calls
+        # self.get_xml_element_{int,double}(["Hydro", "FNO", ...]) — the same
+        # C++ accessors used by FnoHydro.  Requires bind_framework.cc rebuild.
+        fno_hydro = PyFNOHydro(args.model, device=args.device)
+        print(
+            f"[config-source=jetscape-xml] Config will be read from "
+            f"<Hydro><FNO> in {args.user} via JetScapeXML binding at Init time."
+        )
+
+    else:
+        raise ValueError(f"Unknown --config-source: {source!r}")
 
     # JetEnergyLossManager and HadronizationManager are framework-internal
     # classes not registered in the module factory; they are only created by
@@ -209,11 +270,12 @@ def main() -> None:
 
     print("=" * 60)
     print("  JETSCAPE-FNO Python interface test")
-    print(f"  model  : {args.model}")
-    print(f"  main   : {args.main}")
-    print(f"  user   : {args.user}")
-    print(f"  events : {args.events}")
-    print(f"  device : {args.device}")
+    print(f"  model         : {args.model}")
+    print(f"  main          : {args.main}")
+    print(f"  user          : {args.user}")
+    print(f"  events        : {args.events}")
+    print(f"  device        : {args.device}")
+    print(f"  config-source : {args.config_source}")
     print("=" * 60)
 
     modules = build_pipeline(args)
@@ -223,7 +285,14 @@ def main() -> None:
 
     js = run_manual(args.main, args.user, modules, n_events=args.events)
 
-    inspect_results(fno_hydro, n_features=FNO_CONFIG["n_features"],
+    # n_features: read from config if already resolved, else fall back to
+    # FNO_CONFIG (config=None case: _config is populated after js.Init())
+    n_features = (
+        fno_hydro._config["n_features"]
+        if fno_hydro._config is not None
+        else FNO_CONFIG["n_features"]
+    )
+    inspect_results(fno_hydro, n_features=n_features,
                     no_plots=args.no_plots)
 
     print("\nTest complete.")
