@@ -7,6 +7,7 @@ set(PYJETSCAPE_SOURCES
     bind_initial_state.cc
     bind_fluid_dynamics.cc
     bind_music.cc
+    bind_signal_manager.cc
 )
 
 pybind11_add_module(pyjetscape_core ${PYJETSCAPE_SOURCES})

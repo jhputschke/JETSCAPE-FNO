@@ -17,6 +17,8 @@ from .pyjetscape_core import (  # noqa: F401
     JetScapeModuleBase,
     JetScape,
     create_module,
+    # Signal manager — global access to all registered pipeline modules
+    JetScapeSignalManager,
     # Evolution history
     FluidCellInfo,
     SurfaceCellInfo,

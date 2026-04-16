@@ -186,6 +186,42 @@ void bind_evolution(py::module_ &m) {
            "Return flat index for grid position (id_tau, id_x, id_y, id_eta).",
            py::arg("id_tau"), py::arg("id_x"), py::arg("id_y"),
            py::arg("id_eta"))
+      // Interpolated access: same interface used by BulkRootWriter::Exec()
+      .def("get",
+           &EvolutionHistory::get,
+           R"pbdoc(
+             Return interpolated FluidCellInfo at continuous space-time
+             coordinates (tau, x, y, eta).
+
+             Uses trilinear interpolation over the stored grid.  Coordinates
+             outside the grid are clamped to the boundary.
+
+             Parameters
+             ----------
+             tau  : float  — proper time [fm/c]
+             x    : float  — transverse coordinate x [fm]
+             y    : float  — transverse coordinate y [fm]
+             eta  : float  — space-time rapidity (use 0 for boost-invariant)
+
+             Returns
+             -------
+             FluidCellInfo with interpolated energy_density, temperature,
+             vx, vy, vz, etc.
+           )pbdoc",
+           py::arg("tau"), py::arg("x"), py::arg("y"), py::arg("eta"))
+      .def("get_at_time_step",
+           &EvolutionHistory::GetAtTimeStep,
+           R"pbdoc(
+             Return FluidCellInfo at a fixed tau step and continuous (x, y, eta).
+
+             Parameters
+             ----------
+             id_tau : int   — tau grid index
+             x      : float — transverse x [fm]
+             y      : float — transverse y [fm]
+             eta    : float — space-time rapidity
+           )pbdoc",
+           py::arg("id_tau"), py::arg("x"), py::arg("y"), py::arg("eta"))
       .def("clear_up_evolution_data", &EvolutionHistory::clear_up_evolution_data,
            "Clear the FluidCellInfo data vector.");
 }
