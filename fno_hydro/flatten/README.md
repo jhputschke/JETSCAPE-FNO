@@ -1,35 +1,33 @@
-# Motivation:
-  
-  See `../README.md`
+Short C++ code that read through an input ROOT file with a TTree named `t` with
+a branch named `user_res` of data type
+`vector<vector<vector<vector<float>,float>,float>,float>` and writes a new
+TFile with a TTree and TBranch with the same names as the input TFile, but with
+the data in the TBranch flattened into a single fixed-sized array of floats.
 
-# Compilation:
+Input parameters:
+   1. `<name_stemp>` : the name of input ROOT file (without the `.root` extension,
+      which the program automatically adds internally)
 
-Ensure that ROOT is configured on the system so that root-config works. Then
-type make.
+   2. last event. Defaults to -1, in which case it will take all events in the
+      input file.
 
-# Usage:
+   3. `<nsteps_tau>` : number of tau steps to put into output. Defaults to 60.
 
-./bin/flat [INPUT_FILE] [LAST_EVENT] [OUTPUT_FILE] [TIME_STEPS]
+   4. `freeze_only` : a boolean to see if only the tau lenghts of the events
+      should be kept.
 
-DESCRIPTION:
-    Flattens 4D hydrodynamic data from ROOT files into a more convenient format.
-    Converts `vector<vector<vector<vector<float>>>>` data structure to flat arrays
-    (i.e. float[nFeatures*nX*nY*nT]), organized as [nFeatures, nX, nY, nT], so
-    that in numpy they can be converted back into a tensor like:
-    `reshaped_tensor = np.reshape(array, (nFeatures, nX, nX, nT))`
+Output:
 
-ARGUMENTS:
-    INPUT_FILE     Input ROOT file stem (without .root extension)
-                   Default: "jetscape_main"
-                   Program will read from INPUT_FILE.root
+   Generates an output file name of name `<name_stem>_flat_xy<grid_size>_t<nsteps_tau>.root`
+   The grid size is read from the size of the input TTree vector size, `<nsteps_tau>`is
+   an input parameter.
 
-    LAST_EVENT     Maximum event number to process (-1 for all events)
-                   Default: -1 (process all events)
-                   Use positive integer to limit processing
+   The flat output vector is such that it will reshape appropriately with a numpy command:
+   `np.reshape( <array variable>, (nevents, n_parameters, n_x, n_y, n_tau))`
 
-    OUTPUT_FILE    Output ROOT file name
-                   Default: auto-generated as INPUT_FILE_flat_xyNXY_tNT.root
-                   where NXY is grid size and NT is number of time steps
+Use:
+    - Compile with `make` requires that environment tool `root-config` be
+      locally set
 
-    TIME_STEPS     Number of time steps to include in output
-                   Default: 60
+    - Use the executable `bin/flat` with the name-stem of the input ROOT file.
+
