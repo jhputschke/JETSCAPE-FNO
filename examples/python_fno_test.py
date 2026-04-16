@@ -34,6 +34,11 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _REPO_ROOT)
 sys.path.insert(0, os.path.join(_REPO_ROOT, "python"))
 
+# torch must be imported BEFORE pyjetscape_core (loaded via jetscape.__init__)
+# to avoid a dual-OpenMP-runtime crash: ROOT (pulled in by pyjetscape_core)
+# and PyTorch each ship libomp; whichever is initialised second segfaults.
+import torch  # noqa: E402
+
 from jetscape import create_module
 from jetscape.fno_hydro import PyFNOHydro
 from jetscape.run_jetscape import run_manual
@@ -43,7 +48,7 @@ from jetscape.utils import bulk_info_to_numpy, bulk_info_to_tensor
 
 _DEFAULT_MODEL = os.path.join(
     _REPO_ROOT,
-    "fno_hydro", "model",
+    "fno_hydro", "models",
     "traced_JS3.7_10k_3feat_fno_model_cpu_40_60_59bins.pt",
 )
 _DEFAULT_MAIN = os.path.join(_REPO_ROOT, "config", "jetscape_main.xml")

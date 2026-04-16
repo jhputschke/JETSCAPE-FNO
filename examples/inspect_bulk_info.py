@@ -24,7 +24,7 @@ Optional flags:
     --user          Path to user XML config (default: config/jetscape_user_MUSIC.xml)
     --load          Load a previously saved .npy file instead of running a sim
     --save          Save the extracted numpy array to this path (e.g. bulk_info.npy)
-    --n-feat        Number of features to extract (default: 3)
+    --n-feat        Number of features to extract (default: 4)
     --hydro-module  C++ hydro module name (default: MUSIC)
     --use-trento    Use TrentoInitial (C++ module) instead of the Python GaussianIC
     --outdir        Directory for output plots (default: inspect_bulk_info_out/)
@@ -37,6 +37,9 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+
+# Suppress duplicate OpenMP runtime warning on macOS (PyTorch ships its own libomp)
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 # ── Make sure the python package is importable ────────────────────────────────
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,7 +58,7 @@ def parse_args() -> argparse.Namespace:
                    help="Load bulk_info from a previously saved .npy file.")
     p.add_argument("--save",   default=None,
                    help="Save extracted bulk_info numpy array to this file.")
-    p.add_argument("--n-feat", type=int, default=3, dest="n_features",
+    p.add_argument("--n-feat", type=int, default=4, dest="n_features",
                    help="Number of fluid features to extract (3 or 4).")
     p.add_argument("--outdir", default="inspect_bulk_info_out",
                    help="Directory to write plot images.")
