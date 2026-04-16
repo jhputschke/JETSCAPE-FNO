@@ -58,6 +58,21 @@ def bulk_info_to_numpy(bulk_info, n_features: int) -> np.ndarray:
     -------
     np.ndarray, shape (ntau, nx, ny, n_features), dtype float32
     """
+    return bulk_info.to_numpy(n_features)
+
+
+def bulk_info_to_numpy_slow(bulk_info, n_features: int) -> np.ndarray:
+    """
+    Pure-Python fallback: convert EvolutionHistory.data to a numpy array.
+
+    Identical output to bulk_info_to_numpy() but uses a Python-level triple
+    loop with per-cell C++ boundary crossings — kept for benchmarking and
+    as a reference implementation.
+
+    Returns
+    -------
+    np.ndarray, shape (ntau, nx, ny, n_features), dtype float32
+    """
     ntau = bulk_info.ntau
     nx   = bulk_info.nx
     ny   = bulk_info.ny
@@ -81,8 +96,6 @@ def bulk_info_to_numpy(bulk_info, n_features: int) -> np.ndarray:
     ]
     getters = _GETTERS[:n_features]
 
-    # Data layout in bulk_info.data (from FnoHydro::PassHydroEvolutionHistoryToFramework):
-    #   outer loop k (tau), then i (x), then j (y)
     for k in range(ntau):
         for i in range(nx):
             for j in range(ny):

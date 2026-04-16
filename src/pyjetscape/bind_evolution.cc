@@ -223,5 +223,49 @@ void bind_evolution(py::module_ &m) {
            )pbdoc",
            py::arg("id_tau"), py::arg("x"), py::arg("y"), py::arg("eta"))
       .def("clear_up_evolution_data", &EvolutionHistory::clear_up_evolution_data,
-           "Clear the FluidCellInfo data vector.");
+           "Clear the FluidCellInfo data vector.")
+      // Fast bulk export: runs the cell loop in C++ and returns a numpy array
+      // in a single boundary crossing, avoiding ~850K per-cell pybind11 calls.
+      .def("to_numpy",
+           [](const EvolutionHistory &h, int n_features) -> py::array_t<float> {
+             if (n_features < 1 || n_features > 6)
+               throw std::invalid_argument(
+                   "to_numpy: n_features must be 1-6, got " +
+                   std::to_string(n_features));
+             if (h.data.empty())
+               throw std::runtime_error(
+                   "to_numpy: bulk_info.data is empty — run EvolveHydro() first.");
+
+             py::array_t<float> arr({h.ntau, h.nx, h.ny, n_features});
+             auto buf = arr.mutable_unchecked<4>();
+
+             for (int k = 0; k < h.ntau; ++k)
+               for (int i = 0; i < h.nx; ++i)
+                 for (int j = 0; j < h.ny; ++j) {
+                   const auto &c = h.data[h.CellIndex(k, i, j, 0)];
+                   if (n_features >= 1) buf(k, i, j, 0) = c.energy_density;
+                   if (n_features >= 2) buf(k, i, j, 1) = c.temperature;
+                   if (n_features >= 3) buf(k, i, j, 2) = c.vx;
+                   if (n_features >= 4) buf(k, i, j, 3) = c.vy;
+                   if (n_features >= 5) buf(k, i, j, 4) = c.entropy_density;
+                   if (n_features >= 6) buf(k, i, j, 5) = c.pressure;
+                 }
+             return arr;
+           },
+           py::arg("n_features") = 4,
+           R"pbdoc(
+             Convert bulk_info.data to a numpy float32 array in a single C++
+             pass, avoiding per-cell pybind11 overhead.
+
+             Parameters
+             ----------
+             n_features : int (1–6, default 4)
+                 Number of fields to extract per cell.
+                 Layout: [energy_density, temperature, vx, vy,
+                          entropy_density, pressure]
+
+             Returns
+             -------
+             np.ndarray, shape (ntau, nx, ny, n_features), dtype float32
+           )pbdoc");
 }
