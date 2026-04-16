@@ -189,7 +189,6 @@ def _quick_plot(root_path: str) -> None:
     plot_file = os.path.splitext(root_path)[0] + "_quick_look.pdf"
     plt.savefig(plot_file, bbox_inches="tight")
     print(f"\nSaved quick-look plot to {plot_file}")
-    plt.show()
 
 
 if __name__ == "__main__":
