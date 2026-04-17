@@ -1,0 +1,87 @@
+Training on 40 samples
+Testing on [160] samples         on resolutions [100].
+Raw outputs of shape torch.Size([10, 3, 60, 60, 59])
+[0] time=2.97, avg_loss=2.9360, train_err=29.3601
+Eval: 100_h1=2.7978, 100_l2=2.6932
+[Rank 0]: saved training state to trained_model
+[2] time=2.47, avg_loss=2.5288, train_err=25.2883
+Eval: 100_h1=2.5098, 100_l2=2.7374
+[4] time=2.43, avg_loss=2.3348, train_err=23.3483
+Eval: 100_h1=2.2075, 100_l2=1.5570
+[Rank 0]: saved training state to trained_model
+[6] time=2.43, avg_loss=2.0460, train_err=20.4597
+Eval: 100_h1=2.0338, 100_l2=1.4743
+[Rank 0]: saved training state to trained_model
+[8] time=2.44, avg_loss=1.8972, train_err=18.9719
+Eval: 100_h1=1.9258, 100_l2=1.2198
+[Rank 0]: saved training state to trained_model
+[10] time=2.48, avg_loss=1.8124, train_err=18.1244
+Eval: 100_h1=1.8667, 100_l2=1.0865
+[Rank 0]: saved training state to trained_model
+[12] time=2.45, avg_loss=1.7416, train_err=17.4161
+Eval: 100_h1=1.8263, 100_l2=1.0669
+[Rank 0]: saved training state to trained_model
+[14] time=2.44, avg_loss=1.6804, train_err=16.8045
+Eval: 100_h1=1.7877, 100_l2=0.9651
+[Rank 0]: saved training state to trained_model
+[Rank 0]: saved training state to trained_model/checkpoint_15
+saving checkpoint to  trained_model/checkpoint_15
+[16] time=2.44, avg_loss=1.6181, train_err=16.1806
+Eval: 100_h1=1.7514, 100_l2=0.9240
+[Rank 0]: saved training state to trained_model
+[18] time=2.44, avg_loss=1.5641, train_err=15.6413
+Eval: 100_h1=1.7196, 100_l2=0.8916
+[Rank 0]: saved training state to trained_model
+[20] time=2.44, avg_loss=1.5100, train_err=15.1004
+Eval: 100_h1=1.7258, 100_l2=0.9018
+[22] time=2.48, avg_loss=1.4631, train_err=14.6309
+Eval: 100_h1=1.6942, 100_l2=0.8330
+[Rank 0]: saved training state to trained_model
+[24] time=2.44, avg_loss=1.4241, train_err=14.2407
+Eval: 100_h1=1.6864, 100_l2=0.8427
+[26] time=2.45, avg_loss=1.4030, train_err=14.0302
+Eval: 100_h1=1.6818, 100_l2=0.8341
+[28] time=2.45, avg_loss=1.3913, train_err=13.9127
+Eval: 100_h1=1.6796, 100_l2=0.8282
+[Rank 0]: saved training state to trained_model
+[Rank 0]: saved training state to trained_model/checkpoint_30
+saving checkpoint to  trained_model/checkpoint_30
+[30] time=2.44, avg_loss=1.3876, train_err=13.8756
+Eval: 100_h1=1.6803, 100_l2=0.8281
+[Rank 0]: saved training state to trained_model
+[32] time=2.44, avg_loss=1.3870, train_err=13.8704
+Eval: 100_h1=1.6845, 100_l2=0.8335
+[34] time=2.46, avg_loss=1.3822, train_err=13.8216
+Eval: 100_h1=1.6778, 100_l2=0.8298
+[36] time=2.45, avg_loss=1.3634, train_err=13.6341
+Eval: 100_h1=1.6739, 100_l2=0.8274
+[Rank 0]: saved training state to trained_model
+[38] time=2.45, avg_loss=1.3638, train_err=13.6380
+Eval: 100_h1=1.6629, 100_l2=0.8152
+[Rank 0]: saved training state to trained_model
+[40] time=2.45, avg_loss=1.3281, train_err=13.2806
+Eval: 100_h1=1.7022, 100_l2=0.8489
+[42] time=2.45, avg_loss=1.3126, train_err=13.1256
+Eval: 100_h1=1.7200, 100_l2=0.8523
+[44] time=2.46, avg_loss=1.3395, train_err=13.3950
+Eval: 100_h1=1.7179, 100_l2=0.8881
+[Rank 0]: saved training state to trained_model/checkpoint_45
+saving checkpoint to  trained_model/checkpoint_45
+[46] time=2.45, avg_loss=1.2782, train_err=12.7815
+Eval: 100_h1=1.7408, 100_l2=0.8540
+[48] time=2.45, avg_loss=1.2088, train_err=12.0875
+Eval: 100_h1=1.7960, 100_l2=0.8797
+(160, 3, 60, 60, 60)
+(3, 60, 60, 60)
+x shape: torch.Size([3, 60, 60, 59])
+y shape: torch.Size([3, 60, 60, 59])
+x_out shape: (160, 3, 60, 60)
+y_out shape: (160, 3, 60, 60, 59)
+model_out shape: (160, 3, 60, 60, 59)
+x (160, 3, 60, 60)
+y (160, 3, 60, 60, 59)
+model (160, 3, 60, 60, 59)
+truth shape: (160, 3, 60, 60, 59)
+model shape: (160, 3, 60, 60, 59)
+truth shape: (160, 3, 60, 60, 59)
+model shape: (160, 3, 60, 60, 59)
