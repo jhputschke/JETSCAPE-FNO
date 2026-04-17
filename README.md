@@ -1,10 +1,10 @@
 # JETSCAPE-FNO
 
-This repository contains a fork of the JETSCAPE framework (see below based on 3.7.2) for a study first
-documented in the paper ``Fast prediction of hydrodynamnical evolution in
+This repository contains a fork of the JETSCAPE framework (orignally based on 3.7.2 as v0.3 and used in paper below, now updated to 4.0.2) 
+for a study first documented in the paper ``Fast prediction of hydrodynamnical evolution in
 ultra-relativistic heavy-ion collisions using Fourier Neural Operators''
 located at https://doi.org/10.48550/arXiv.2507.23598
-(Published in: Phys.Rev.C 113 (2026) 1, 014904)
+(Published in: Phys.Rev.C 113 (2026) 1, 014904, for exact replication of results use release version v0.3)
 
 More details and documentation can be found in the [fno_hydro directory](https://github.com/jhputschke/JETSCAPE-FNO/tree/main/fno_hydro).
 
