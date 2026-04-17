@@ -1,8 +1,9 @@
 /*******************************************************************************
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
- * Modular, task-based framework for simulating all aspects of heavy-ion collisions
- * 
+ * Modular, task-based framework for simulating all aspects of heavy-ion
+ *collisions
+ *
  * For the list of contributors see AUTHORS.
  *
  * Report issues at https://github.com/JETSCAPE/JETSCAPE/issues
@@ -14,12 +15,13 @@
  ******************************************************************************/
 
 #include "HardProcess.h"
-#include "JetScapeLogger.h"
-#include "JetScapeXML.h"
-#include "JetScapeSignalManager.h"
-#include <string>
 
 #include <iostream>
+#include <string>
+
+#include "JetScapeLogger.h"
+#include "JetScapeSignalManager.h"
+#include "JetScapeXML.h"
 
 using namespace std;
 
@@ -48,20 +50,20 @@ void HardProcess::Init() {
 
   ini = JetScapeSignalManager::Instance()->GetInitialStatePointer().lock();
   if (!ini) {
-
     // If not vacuum case, give warning to add initial state module
     bool in_vac = GetXMLElementInt({"Eloss", "Matter", "in_vac"});
-    if (!in_vac) {
+    bool in_brick = GetXMLElementInt({"Eloss", "Matter", "brick_med"});
+    if (!in_vac and !in_brick) {
       JSWARN << "No initial state module! Please check whether you intend to "
                 "add an initial state module.";
+      exit(-1);
     }
   }
-    string status = GetXMLElementText({"PartonPrinter","Status"});
-    if (status!="off")
-    {
-        printer = GetXMLElementText({"PartonPrinter","FileName"});
-        JSINFO << BOLDYELLOW << "Extra parton info goes to " << printer ;
-    }
+  string status = GetXMLElementText({"PartonPrinter", "Status"});
+  if (status != "off") {
+    printer = GetXMLElementText({"PartonPrinter", "FileName"});
+    JSINFO << BOLDYELLOW << "Extra parton info goes to " << printer;
+  }
 
   InitTask();
 
@@ -92,10 +94,9 @@ void HardProcess::WriteTask(weak_ptr<JetScapeWriter> w) {
 
     // Weight, xsec, etc
 
-    // // Can explicitly write our own header information, though the writer should handle this.
-    // std::ostringstream oss;
-    // oss.str(""); oss << GetId() << " sigmaGen  = " << GetSigmaGen();
-    // f->WriteComment ( oss.str() );
+    // // Can explicitly write our own header information, though the writer
+    // should handle this. std::ostringstream oss; oss.str(""); oss << GetId()
+    // << " sigmaGen  = " << GetSigmaGen(); f->WriteComment ( oss.str() );
     // oss.str(""); oss << GetId() << " sigmaErr  = " << GetSigmaErr();
     // f->WriteComment ( oss.str() );
     // oss.str(""); oss << GetId() << " weight  = " << GetEventWeight();
@@ -122,4 +123,4 @@ void HardProcess::CollectHeader(weak_ptr<JetScapeWriter> w) {
   }
 }
 
-} // end namespace Jetscape
+}  // end namespace Jetscape

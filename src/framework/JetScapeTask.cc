@@ -1,7 +1,8 @@
 /*******************************************************************************
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
- * Modular, task-based framework for simulating all aspects of heavy-ion collisions
+ * Modular, task-based framework for simulating all aspects of heavy-ion
+ *collisions
  *
  * For the list of contributors see AUTHORS.
  *
@@ -14,12 +15,12 @@
  ******************************************************************************/
 
 #include "JetScapeTask.h"
-#include "JetScapeTaskSupport.h"
-#include "JetScapeLogger.h"
-
-#include "JetEnergyLoss.h"
 
 #include <iostream>
+
+#include "JetEnergyLoss.h"
+#include "JetScapeLogger.h"
+#include "JetScapeTaskSupport.h"
 
 using namespace std;
 
@@ -40,12 +41,14 @@ JetScapeTask::~JetScapeTask() {
 
 void JetScapeTask::Init() { JSDEBUG; }
 
-/** Recursive initialization of all the subtasks of the JetScapeTask. Subtasks are also of type JetScapeTask such as Pythia Gun, Trento, Energy Loss Matter and Martini etc.
-   */
+/** Recursive initialization of all the subtasks of the JetScapeTask. Subtasks
+ * are also of type JetScapeTask such as Pythia Gun, Trento, Energy Loss Matter
+ * and Martini etc.
+ */
 void JetScapeTask::InitTasks() {
   VERBOSE(7) << " : # Subtasks = " << tasks.size();
 
-  //In short ...
+  // In short ...
   for (auto it : tasks)
     it->Init();
 }
@@ -78,7 +81,7 @@ void JetScapeTask::ClearTasks() {
 }
 
 void JetScapeTask::WriteTasks(weak_ptr<JetScapeWriter> w) {
-  //VERBOSE(10);
+  // VERBOSE(10);
   if (active_exec) {
     for (auto it : tasks)
       it->WriteTask(w);
@@ -86,7 +89,7 @@ void JetScapeTask::WriteTasks(weak_ptr<JetScapeWriter> w) {
 }
 
 void JetScapeTask::CollectHeaders(weak_ptr<JetScapeWriter> w) {
-  //VERBOSE(10);
+  // VERBOSE(10);
   if (active_exec) {
     for (auto it : tasks)
       it->CollectHeader(w);
@@ -97,4 +100,4 @@ void JetScapeTask::Add(shared_ptr<JetScapeTask> m_tasks) {
   tasks.push_back(m_tasks);
 }
 
-} // end namespace Jetscape
+}  // end namespace Jetscape

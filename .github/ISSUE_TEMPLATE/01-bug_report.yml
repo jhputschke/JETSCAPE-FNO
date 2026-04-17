@@ -36,7 +36,7 @@ body:
       label: Container
       description: Which JETSCAPE container are you using?
         Please also provide the version and platform.
-      placeholder: ex. jetscape/base:stable with Docker version 24.0.5
+      placeholder: ex. jetscape/base:v1.11 with Docker version 24.0.5
     validations:
       required: true
 
