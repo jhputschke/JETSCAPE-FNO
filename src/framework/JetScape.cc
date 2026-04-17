@@ -228,7 +228,7 @@ void JetScape::DetermineTaskListFromXML() {
   while (elementXML) {
     std::string elementName = elementXML->Name();
     if (elementName == "Liquefier") {
-      liquefier = make_shared<GausLiquefier>();
+      liquefier = make_shared<CausalLiquefier>();
       JSINFO << "Created liquefier.";
     }
     elementXML = elementXML->NextSiblingElement();
