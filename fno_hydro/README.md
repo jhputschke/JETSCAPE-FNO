@@ -5,6 +5,30 @@ documented in the paper ``Fast prediction of hydrodynamnical evolution in
 ultra-relativistic heavy-ion collisions using Fourier Neural Operators''
 located at https://doi.org/10.48550/arXiv.2507.23598
 
+For full installation including the new Python Interface make sure you
+are in a Pthon enviroment outlined for training the model and the Python
+Interface (see README in ./python folder):
+
+# Requirements
+
+| Dependency | Version | Notes |
+|------------|---------|-------|
+| Python | ≥ 3.8 | 3.12 used in the `js_fno` conda env |
+| PyTorch | ≥ 2.0 | Required for `PyFNOHydro`; `pyjetscape_core` itself is pure C++ |
+| numpy | ≥ 1.21 | |
+| pybind11 | ≥ 2.11 | Fetched automatically by CMake |
+| CMake | ≥ 3.18 | FetchContent support |
+
+
+```bash
+
+cmake .. -DUSE_MUSIC=ON -DUSE_ISS=ON -DUSE_PYTHON=ON -USE_ROOT=ON 
+          -DCMAKE_PREFIX_PATH=$(python -c "import torch; print(torch.utils.cmake_prefix_path)")
+```
+
+If you need to include more/different physics module please follow the 
+JETSCAPE installation/compile instructions!
+
 This repository contains the code generated for that study, and is intended
 to both archive what was done, and also to provide resources for additional
 studies. To do so, it contains the following parts:

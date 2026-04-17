@@ -6,6 +6,7 @@
 #include "hdf5_utils.h"
 
 #include <stdexcept>
+#include <algorithm>
 
 #include <boost/filesystem.hpp>
 

@@ -9,7 +9,8 @@
 *.*~
 .DS_Store
 html/*
-build/*
+build*/*
+notebooks*/*
 .vscode/
 external_packages/LBT*
 external_packages/iSS*
@@ -18,8 +19,11 @@ examples/test_hydro_files/
 external_packages/freestream-milne/
 external_packages/smash/smash_code/
 external_packages/ipglasma
-fno_hydro/models
+fno_hydro/model*
 fno_hydro/libtorch
 fno_hydro/libtorch/*
 fno_hydro/input_root
 *__cmake*
+*__pycache*
+*.cpython*
+*.bak

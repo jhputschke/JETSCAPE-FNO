@@ -10,7 +10,6 @@ More details and documentation can be found in the [fno_hydro directory](https:/
 
 All data in ROOT format and some pre-trained model can be found at: https://zenodo.org/records/16647726
 
-
 # JETSCAPE 3.7.2
 
 The [JETSCAPE](http://jetscape.org) simulation framework is an overarching computational envelope for developing complete event generators for heavy-ion collisions.

@@ -26,11 +26,12 @@ int main(int argc, const char* argv[]) {
 
   std::cout << "ok\n";
 
-//module.to(at::kCPU);
+  //module.to(at::kCUDA);
+  //std::cout << "to device CUDA \n"; 
 
   // Create a vector of inputs.
 std::vector<torch::jit::IValue> inputs;
-inputs.push_back(torch::rand({1,4, 60, 60, 50})); // .to(at::kMPS));
+inputs.push_back(torch::rand({1,3, 60, 60, 59}));//.to(at::kCUDA));
 
 // Execute the model and turn its output into a tensor.
 at::Tensor output = module.forward(inputs).toTensor();
