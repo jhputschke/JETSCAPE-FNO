@@ -1,8 +1,9 @@
 /*******************************************************************************
  * Copyright (c) The JETSCAPE Collaboration, 2018
  *
- * Modular, task-based framework for simulating all aspects of heavy-ion collisions
- * 
+ * Modular, task-based framework for simulating all aspects of heavy-ion
+ *collisions
+ *
  * For the list of contributors see AUTHORS.
  *
  * Report issues at https://github.com/JETSCAPE/JETSCAPE/issues
@@ -16,134 +17,155 @@
 #ifndef HARDPROCESS_H
 #define HARDPROCESS_H
 
-#include "InitialState.h"
-#include "JetScapeModuleBase.h"
-#include "JetClass.h"
 #include <vector>
+
+#include "InitialState.h"
+#include "JetClass.h"
+#include "JetScapeModuleBase.h"
 
 namespace Jetscape {
 
 /**
-     @class 
-     Interface for the hard process. 
-   */
+ * @class HardProcess
+ * @brief Interface for the hard scattering process in the JetScape framework.
+ *
+ * The HardProcess class defines the interface and base functionality
+ * for simulating hard scattering events. It provides methods for
+ * initialization, execution, clearing state, writing output, and handling event
+ * metadata such as cross-sections and weights. Derived classes implement
+ * specific physics modules such as Pythia-based event generators.
+ */
 class HardProcess : public JetScapeModuleBase {
-
-public:
-  /** Default constructor to create a Hard Process Physics task. Sets the task ID as "HardProcess".
-  */
+ public:
+  /**
+   * @brief Default constructor.
+   *
+   * Creates a HardProcess physics task and sets the task ID as "HardProcess".
+   */
   HardProcess();
 
-  /** Destructor for the Hard Process Physics task.
+  /**
+   * @brief Destructor.
+   *
+   * Cleans up parton and hadron lists, disconnects signals, and finalizes
+   * the task.
    */
   virtual ~HardProcess();
 
-  /** It reads the input parameters relevant to the hard scattering from the XML file under the name tag <Hard>. Uses JetScapeSingnalManager Instance to retrieve the Initial State Physics information. Calls InitTask(); This explicit call can be used for actual initialization of modules such as @a PythiaGun if attached as a @a polymorphic class. It also initializes the tasks within the current module.
-    @sa Read about @a polymorphism in C++.
-  */
+  /**
+   * @brief Initialize the HardProcess module.
+   *
+   * Reads input parameters from the XML file under the `<Hard>` tag, retrieves
+   * the InitialState module from JetScapeSignalManager, sets up printer
+   * options, and initializes attached sub-tasks.
+   */
   virtual void Init();
 
-  /** Calls JetScapeTask::ExecuteTasks() for recursive execution of tasks attached to HardProcess module. It can be overridden by the attached module.
+  /**
+   * @brief Execute the HardProcess module.
+   *
+   * Runs attached tasks recursively via JetScapeTask::ExecuteTasks().
    */
   virtual void Exec();
 
-  /** Erases the hard partons stored in the vector @a hp_list of the hard process module. It can be overridden by the attached module.
-  */
+  /**
+   * @brief Clear the internal state.
+   *
+   * Erases all stored hard partons and hadrons from memory.
+   */
   virtual void Clear();
 
-  /** It writes the output information obtained from the HardProcess Task into a file.
-      @param w is a pointer of type JetScapeWrite class.
-  */
+  /**
+   * @brief Write hard process data to output.
+   *
+   * @param w Weak pointer to a JetScapeWriter module.
+   *
+   * Outputs hard parton list and related metadata to the writer.
+   */
   virtual void WriteTask(weak_ptr<JetScapeWriter> w);
 
-  /** Collect header information for writer modules
-      @param w is a pointer of type JetScapeWrite class.
-  */
+  /**
+   * @brief Collect header information for output.
+   *
+   * @param w Weak pointer to a JetScapeWriter module.
+   *
+   * Stores generated cross-sections, pt-hat, and event weights into
+   * the output header.
+   */
   virtual void CollectHeader(weak_ptr<JetScapeWriter> w);
 
-  // connect the InitialState module with hard process
-  /** A pointer of type InitialState class. 
-   */
+  /** @brief Pointer to the InitialState module. */
   std::shared_ptr<InitialState> ini;
 
-  /** 
-      @return The number of hard partons.
-   */
+  /** @return Number of hard partons currently stored. */
   int GetNHardPartons() { return hp_list.size(); }
 
-  /** @return A pointer to the Parton class for ith hard parton.
-      @param i Index of a vector of the hard parton.
+  /**
+   * @brief Get a pointer to a hard parton at a given index.
+   * @param i Index of the hard parton.
+   * @return Shared pointer to the Parton.
    */
   shared_ptr<Parton> GetPartonAt(int i) { return hp_list[i]; }
 
-  /** @return A vector of the Parton class. These parton classes correspond to the hard partons.
+  /**
+   * @brief Access the list of all hard partons.
+   * @return Reference to the vector of Parton shared pointers.
    */
   vector<shared_ptr<Parton>> &GetPartonList() { return hp_list; }
 
-  /** It adds a parton class pointer p into an existing vector of hard Parton class, and increases the vector size by 1.
-      @param p Parton class pointer for a hard parton.
+  /**
+   * @brief Add a hard parton to the list.
+   * @param p Shared pointer to a Parton object.
    */
   void AddParton(shared_ptr<Parton> p) { hp_list.push_back(p); }
 
-  // Slots ...
-  /** This function stores the vector of hard partons into a vector plist.
-      @param plist A output vector of Parton class.
+  /**
+   * @brief Retrieve the list of hard partons into an external vector.
+   * @param plist Output vector of Parton shared pointers.
    */
   void GetHardPartonList(vector<shared_ptr<Parton>> &plist) { plist = hp_list; }
 
-  /** Generated cross section.
-      To be overwritten by implementations that have such information.
-  */
+  /** @return Generated cross section (default = 1). */
   virtual double GetSigmaGen() { return 1; };
-  /** Generated cross section error.
-      To be overwritten by implementations that have such information.
-  */
+
+  /** @return Cross section error (default = 0). */
   virtual double GetSigmaErr() { return 0; };
 
-  /** Generated pt-hat
-      To be overwritten by implementations that have such information.
-  */
+  /** @return Generated pt-hat (default = 0). */
   virtual double GetPtHat() { return 0; };
 
-  /** Generated weight.
-      This is in addition to sigmaGen, e.g. coming from dynamic oversampling.
-      To be overwritten by implementations that have such information.
-  */
+  /** @return Event weight (default = 1). */
   virtual double GetEventWeight() { return 1; };
 
-  /** It adds a Hadron class pointer h into an existing vector of Hadron class, and increases the vector size by 1.
-      @param h Hadron class pointer for a hadron.
+  /**
+   * @brief Add a hadron to the list.
+   * @param h Shared pointer to a Hadron object.
    */
   void AddHadron(shared_ptr<Hadron> h) { hd_list.push_back(h); }
 
-  // Slots ...
-  /** This function stores the vector of hadrons into a vector hlist.
-      @param hlist an output vector of Hadron class.
+  /**
+   * @brief Retrieve the hadron list into an external vector.
+   * @param hlist Output vector of Hadron shared pointers.
    */
   void GetHadronList(vector<shared_ptr<Hadron>> &hlist) { hlist = hd_list; }
 
-  /** @return A vector of the Hadron class.
-   */
+  /** @return Reference to the internal list of Hadrons. */
   vector<shared_ptr<Hadron>> &GetHadronList() { return hd_list; }
 
-  /**
-      @return The number of hadrons.
-  */
+  /** @return Number of hadrons currently stored. */
   int GetNHadrons() { return hd_list.size(); }
 
-    std::string printer;
-    
-private:
-  // Think of always using unique_ptr for any vector in jetscape framework !???
-  // To be discussed ...
+  /** @brief File name used for printing additional parton information. */
+  std::string printer;
+
+ private:
+  /** @brief List of hard partons. */
   vector<shared_ptr<Parton>> hp_list;
 
-  // A vector of Hadrons generated by Pythia
+  /** @brief List of hadrons generated by the hard process. */
   vector<shared_ptr<Hadron>> hd_list;
-    
-
 };
 
-} // end namespace Jetscape
+}  // end namespace Jetscape
 
 #endif
